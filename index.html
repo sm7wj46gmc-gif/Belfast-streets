@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Prince Fireball</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#03040a;font-family:Arial,sans-serif;touch-action:none}
+#game{display:block;width:100vw;height:100vh}
+#rotate{display:none;position:fixed;inset:0;background:#050611;color:#7dff9c;z-index:10;align-items:center;justify-content:center;text-align:center;font-size:28px;padding:30px}
+@media (orientation:portrait){#rotate{display:flex}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="rotate">🔄<br><br>Please rotate your iPad to landscape mode</div>
+<script>
+const canvas=document.getElementById('game'), ctx=canvas.getContext('2d');
+let W,H,DPR;
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',resize);resize();
+
+const keys={left:false,right:false,jump:false,fire:false};
+const player={x:150,y:300,w:42,h:58,vx:0,vy:0,onGround:false,facing:1,health:3,coins:0,shotCooldown:0,inv:0};
+let camera=0, level=1, won=false, gameOver=false;
+const groundY=()=>H-105;
+const platforms=[
+ {x:0,y:groundY(),w:900,h:40},{x:1050,y:groundY(),w:700,h:40},{x:1850,y:groundY(),w:950,h:40},
+ {x:450,y:groundY()-120,w:180,h:25},{x:800,y:groundY()-190,w:160,h:25},
+ {x:1250,y:groundY()-130,w:180,h:25},{x:1600,y:groundY()-220,w:150,h:25},
+ {x:2100,y:groundY()-140,w:190,h:25}
+];
+let enemies=[
+ {type:'Robo Rat',x:600,y:groundY()-45,w:50,h:45,vx:1.2,hp:1,color:'#d52d52'},
+ {type:'Forky',x:1350,y:groundY()-70,w:44,h:70,vx:-0.7,hp:2,color:'#a54cff'},
+ {type:'Sludge Brain',x:1750,y:groundY()-70,w:52,h:52,vx:0.8,hp:1,color:'#72ff65'},
+ {type:'Robo Rat',x:2350,y:groundY()-45,w:50,h:45,vx:-1.4,hp:1,color:'#d52d52'}
+];
+let fireballs=[], particles=[];
+let coins=Array.from({length:15},(_,i)=>({x:300+i*150,y:groundY()-80-(i%3)*45,taken:false}));
+const finish={x:2650,y:groundY()-90,w:30,h:90};
+
+function rectHit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function shoot(){
+ if(player.shotCooldown>0)return;
+ player.shotCooldown=18;
+ fireballs.push({x:player.x+player.w/2+player.facing*18,y:player.y+25,w:18,h:12,vx:player.facing*11});
+}
+function jump(){if(player.onGround){player.vy=-15;player.onGround=false}}
+function damage(){
+ if(player.inv>0)return;
+ player.health--;player.inv=70;player.vy=-8;player.vx=-player.facing*5;
+ if(player.health<=0)gameOver=true;
+}
+function update(){
+ if(won||gameOver)return;
+ if(keys.jump){jump();keys.jump=false}
+ if(keys.fire){shoot();keys.fire=false}
+ player.shotCooldown=Math.max(0,player.shotCooldown-1);player.inv=Math.max(0,player.inv-1);
+ player.vx=(keys.left?-4:0)+(keys.right?4:0);
+ if(player.vx!==0)player.facing=Math.sign(player.vx);
+ player.vy+=0.75; player.x+=player.vx; player.y+=player.vy;
+ player.onGround=false;
+ for(const p of platforms){
+   if(player.x+player.w>p.x&&player.x<p.x+p.w&&player.vy>=0&&player.y+player.h>=p.y&&player.y+player.h-player.vy<=p.y+8){
+     player.y=p.y-player.h;player.vy=0;player.onGround=true;
+   }
+ }
+ if(player.y>H+200)damage(),player.y=200;
+ player.x=Math.max(0,player.x);
+
+ for(const c of coins)if(!c.taken&&Math.abs((player.x+21)-c.x)<35&&Math.abs((player.y+30)-c.y)<45){c.taken=true;player.coins++}
+ for(const e of enemies){
+   e.x+=e.vx;
+   if(e.x<100||e.x>2700)e.vx*=-1;
+   if(rectHit(player,e))damage();
+ }
+ for(const f of fireballs){
+   f.x+=f.vx;
+   for(const e of enemies){
+     if(!e.dead&&rectHit(f,e)){e.hp--;f.dead=true;if(e.hp<=0){e.dead=true;for(let i=0;i<12;i++)particles.push({x:e.x+e.w/2,y:e.y+e.h/2,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,life:35,color:'#70ff8c'})}}
+   }
+ }
+ fireballs=fireballs.filter(f=>!f.dead&&f.x>-50&&f.x<2900);
+ enemies=enemies.filter(e=>!e.dead);
+ particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.life--});particles=particles.filter(p=>p.life>0);
+ if(rectHit(player,finish))won=true;
+ camera=Math.max(0,Math.min(player.x-W*.38,2800-W));
+}
+function glow(color,blur=12){ctx.shadowColor=color;ctx.shadowBlur=blur}
+function drawWorld(){
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#040514');g.addColorStop(1,'#101020');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ // stars/city
+ ctx.fillStyle='#10142a';for(let i=0;i<35;i++){let x=(i*137)%3000-camera;let bh=80+(i*47)%190;ctx.fillRect(x,H-105-bh,80,bh)}
+ ctx.strokeStyle='#25316b';ctx.lineWidth=2;for(let x=0;x<3000;x+=250){ctx.beginPath();ctx.moveTo(x-camera,80);ctx.lineTo(x-camera+80,H-105);ctx.stroke()}
+ ctx.save();ctx.translate(-camera,0);
+ // platforms
+ for(const p of platforms){ctx.fillStyle='#182136';glow('#00bfff',8);ctx.fillRect(p.x,p.y,p.w,p.h);ctx.shadowBlur=0;ctx.fillStyle='#26375d';ctx.fillRect(p.x,p.y,p.w,6)}
+ // finish
+ ctx.fillStyle='#1e263b';ctx.fillRect(finish.x,finish.y,finish.w,finish.h);glow('#00ff88',18);ctx.fillStyle='#00ff88';ctx.fillRect(finish.x+finish.w,finish.y,45,8);ctx.shadowBlur=0;
+ // coins
+ for(const c of coins)if(!c.taken){glow('#ffe55c',12);ctx.fillStyle='#ffd43b';ctx.beginPath();ctx.arc(c.x,c.y,11,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
+ // enemies
+ for(const e of enemies){
+   glow(e.color,14);ctx.fillStyle=e.color;
+   if(e.type==='Robo Rat'){ctx.fillRect(e.x,e.y+15,e.w,e.h-15);ctx.beginPath();ctx.arc(e.x+12,e.y+14,15,Math.PI,0);ctx.fill();ctx.strokeStyle='#aaa';ctx.beginPath();ctx.moveTo(e.x+e.w,e.y+30);ctx.lineTo(e.x+e.w+20,e.y+10);ctx.stroke()}
+   else if(e.type==='Forky'){ctx.fillRect(e.x+8,e.y+20,28,50);ctx.fillRect(e.x+5,e.y,5,25);ctx.fillRect(e.x+16,e.y,5,25);ctx.fillRect(e.x+27,e.y,5,25)}
+   else {ctx.beginPath();ctx.arc(e.x+26,e.y+28,26,0,Math.PI*2);ctx.fill();ctx.fillStyle='#173d1c';for(let i=0;i<5;i++)ctx.fillRect(e.x+5+i*9,e.y+12+(i%2)*10,6,5)}
+   ctx.shadowBlur=0;
+ }
+ // player
+ if(player.inv%10<6){glow('#66ff8b',18);ctx.fillStyle='#17231d';ctx.fillRect(player.x,player.y+10,player.w,player.h-10);ctx.fillStyle='#57ff73';ctx.beginPath();ctx.arc(player.x+21,player.y+16,19,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d6ffe0';ctx.fillRect(player.x+12,player.y+13,7,5);ctx.fillRect(player.x+24,player.y+13,7,5);ctx.fillStyle='#d8b24a';ctx.fillRect(player.x+13,player.y,16,6);ctx.shadowBlur=0}
+ // fireballs
+ for(const f of fireballs){glow('#4cff6a',22);ctx.fillStyle='#4cff6a';ctx.beginPath();ctx.arc(f.x,f.y,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e8ffca';ctx.beginPath();ctx.arc(f.x,f.y,4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
+ for(const p of particles){ctx.fillStyle=p.color;glow(p.color,8);ctx.fillRect(p.x,p.y,4,4);ctx.shadowBlur=0}
+ ctx.restore();
+}
+function button(x,y,w,h,label,active){
+ ctx.globalAlpha=.75;ctx.fillStyle=active?'#3cff70':'#11192c';glow(active?'#3cff70':'#2d77ff',12);ctx.fillRect(x,y,w,h);ctx.shadowBlur=0;ctx.strokeStyle='#5876b5';ctx.strokeRect(x,y,w,h);ctx.globalAlpha=1;ctx.fillStyle='white';ctx.font=`bold ${Math.max(18,h*.35)}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,x+w/2,y+h/2)
+}
+function drawUI(){
+ ctx.fillStyle='white';ctx.font='bold 18px Arial';ctx.textAlign='left';ctx.fillText('PRINCE FIREBALL',25,34);ctx.fillStyle='#70ff8c';ctx.fillText('♥'.repeat(player.health),25,60);ctx.fillStyle='#ffd43b';ctx.fillText('◉ '+player.coins,140,60);ctx.fillStyle='#b8c5ff';ctx.fillText('LEVEL '+level,230,60);
+ const s=Math.min(W,H)*.13, pad=18;
+ button(pad,H-s-pad,s,s,'◀',keys.left);button(pad+s+12,H-s-pad,s,s,'▶',keys.right);
+ button(W-pad-s*2-12,H-s-pad,s,s,'↑',false);button(W-pad-s,H-s-pad,s,s,'🔥',false);
+ if(won||gameOver){ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle=won?'#70ff8c':'#ff5577';ctx.font='bold 46px Arial';ctx.fillText(won?'LEVEL COMPLETE!':'GAME OVER',W/2,H/2-20);ctx.fillStyle='white';ctx.font='24px Arial';ctx.fillText('Tap anywhere to restart',W/2,H/2+35)}
+}
+function render(){drawWorld();drawUI()}
+function loop(){update();render();requestAnimationFrame(loop)}loop();
+
+function setButton(e,on){
+ const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left),y=(e.clientY-r.top),s=Math.min(W,H)*.13,pad=18;
+ if(won||gameOver){if(on)location.reload();return}
+ if(x<pad+s*2+30&&y>H-s-pad){keys.left=x<pad+s;keys.right=x>=pad+s}
+ if(x>W-pad-s*2-30&&y>H-s-pad){
+   if(x<W-pad-s) {if(on)keys.jump=true}
+   else {if(on)keys.fire=true}
+ }
+}
+canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches)setButton(t,true)},{passive:false});
+canvas.addEventListener('touchend',e=>{keys.left=false;keys.right=false},{passive:false});
+canvas.addEventListener('mousedown',e=>setButton(e,true));
+canvas.addEventListener('mouseup',()=>{keys.left=false;keys.right=false});
+addEventListener('keydown',e=>{if(e.code==='ArrowLeft'||e.code==='KeyA')keys.left=true;if(e.code==='ArrowRight'||e.code==='KeyD')keys.right=true;if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')keys.jump=true;if(e.code==='KeyF'||e.code==='KeyX')keys.fire=true});
+addEventListener('keyup',e=>{if(e.code==='ArrowLeft'||e.code==='KeyA')keys.left=false;if(e.code==='ArrowRight'||e.code==='KeyD')keys.right=false});
+</script>
+</body>
+</html>
