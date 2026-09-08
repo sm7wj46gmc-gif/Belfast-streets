@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Belfast Streets V27 – Ultimate Audio</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;overflow:hidden;background:#081018;font-family:Arial,Helvetica,sans-serif;color:#fff}
+canvas{display:block;width:100vw;height:100vh;touch-action:none}
+#hud{position:fixed;inset:0;pointer-events:none}
+.panel{position:absolute;background:linear-gradient(135deg,rgba(7,13,20,.88),rgba(20,31,42,.66));border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 35px #0007;backdrop-filter:blur(8px);border-radius:15px}
+#top{left:14px;top:14px;padding:12px 15px;width:225px}#title{font-size:19px;font-weight:900;letter-spacing:1px}#sub{font-size:10px;color:#73bdf4;margin-top:4px;letter-spacing:1px}
+.stat{font-size:10px;margin-top:8px;color:#c7d5e0}.bar{height:8px;background:#111b24;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid #ffffff14}.fill{height:100%;border-radius:8px}#health{width:100%;background:linear-gradient(90deg,#25c66d,#6cf59d)}#stamina{width:100%;background:linear-gradient(90deg,#2a8fff,#74caff)}
+#wanted{right:15px;top:15px;padding:12px 15px;color:#ffd34f;font-size:23px}.label{font-size:9px;color:#b7c6d3;display:block;margin-bottom:3px}
+#mission{left:50%;top:15px;transform:translateX(-50%);padding:11px 20px;text-align:center;min-width:245px;font-size:12px}.mission-title{font-weight:900;color:#ffd45b;letter-spacing:.8px}
+#msg{left:50%;bottom:120px;transform:translateX(-50%);padding:10px 18px;font-size:12px;opacity:0;transition:.25s;white-space:nowrap}
+#miniWrap{right:15px;bottom:15px;width:166px;height:166px;border-radius:17px;overflow:hidden}.panelTitle{position:absolute;z-index:2;top:8px;left:10px;font-size:9px;letter-spacing:1px;color:#a8c2d6}#mini{width:166px;height:166px}
+#controls{position:fixed;inset:0;pointer-events:none}.pad,.btn{pointer-events:auto;position:absolute;user-select:none;-webkit-user-select:none}
+.pad{left:18px;bottom:18px;width:142px;height:142px;border-radius:50%;background:radial-gradient(circle,#ffffff12,#0c1724aa);border:2px solid #ffffff20;box-shadow:0 10px 30px #0006}
+.knob{position:absolute;width:54px;height:54px;border-radius:50%;left:42px;top:42px;background:#5fb6ff55;border:1px solid #bce5ff77}
+.btn{right:25px;bottom:36px;width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#66baff,#1669b8);border:2px solid #d7efff88;box-shadow:0 10px 25px #0008;font-weight:900;font-size:13px}
+#help{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);font-size:10px;color:#afc0cf;text-align:center}
+#start{position:fixed;inset:0;background:radial-gradient(circle at center,#274968,#081018 68%);display:grid;place-items:center;z-index:10}.card{max-width:530px;margin:20px;padding:34px;text-align:center;background:linear-gradient(145deg,#132536ee,#071018ee);border:1px solid #5c94bd66;border-radius:25px;box-shadow:0 25px 70px #000a}.card h1{margin:0;color:#76c4ff;font-size:38px}.card p{color:#c1d0db;line-height:1.55}.card button{font-size:18px;padding:14px 30px;border:0;border-radius:12px;background:linear-gradient(#42a7f2,#176eb6);color:white;font-weight:bold;box-shadow:0 8px 20px #0007}
+@media(max-width:700px){#mission{top:125px;min-width:190px}#top{width:190px}.pad{transform:scale(.86);transform-origin:bottom left}.btn{transform:scale(.9);transform-origin:bottom right}#miniWrap{transform:scale(.88);transform-origin:bottom right}}
+
+#interior{position:fixed;inset:0;display:none;z-index:8;background:radial-gradient(circle at center,#6c6253,#252525 70%);align-items:center;justify-content:center}
+#room{width:min(88vw,700px);height:min(70vh,500px);border:14px solid #493f35;background:#c8b99b;box-shadow:0 0 0 8px #1d1a18,0 30px 80px #000b;position:relative}
+#room h2{position:absolute;top:12px;left:0;right:0;text-align:center;margin:0;color:#342b25}
+.counter{position:absolute;left:8%;right:8%;top:18%;height:55px;background:#57483d;border:5px solid #2d2722}
+.shelf{position:absolute;width:23%;height:35%;background:#806b57;border:4px solid #45392f}
+.s1{left:8%;bottom:12%}.s2{right:8%;bottom:12%}
+.door{position:absolute;bottom:0;left:42%;width:16%;height:75px;background:#493c32;border:5px solid #2d2722}
+#interiorInfo{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#0c131be8;padding:12px 20px;border-radius:12px;text-align:center;font-size:13px}
+#exitRoom{position:absolute;right:18px;top:18px;background:#b33a3a;border:0;color:#fff;padding:10px 15px;border-radius:8px;font-weight:bold}
+
+#roomDecor{position:absolute;inset:0;pointer-events:none}
+#roomAction{position:absolute;left:50%;bottom:85px;transform:translateX(-50%);z-index:4}
+.roomBtn{background:#2f8bc9;color:#fff;border:2px solid #bde6ff;padding:11px 16px;border-radius:9px;font-weight:bold;font-size:13px;box-shadow:0 6px 15px #0007}
+.roomBtn:active{transform:scale(.96)}
+.sofa{position:absolute;left:12%;bottom:17%;width:130px;height:48px;background:#596b79;border:6px solid #35424b;border-radius:8px}
+.bed{position:absolute;right:10%;bottom:14%;width:155px;height:80px;background:#e4e0d6;border:8px solid #6e5c4e;border-radius:5px}
+.carLift{position:absolute;left:18%;right:18%;top:30%;height:90px;border:8px solid #4a4e52;background:#25292d}
+.coffee{position:absolute;left:36%;top:46%;width:28%;height:65px;border-radius:50%;background:#624a36;border:8px solid #3d2c20}
+
+#versionBadge{position:absolute;right:14px;bottom:195px;padding:7px 10px;border-radius:9px;background:#0b1620bb;border:1px solid #ffffff22;font-size:9px;color:#7cc8ff;letter-spacing:1px}
+
+#districtBanner{position:absolute;top:86px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:2px;color:#dcecff;text-shadow:0 2px 4px #000;pointer-events:none}
+
+/* V60 MASSIVE MILESTONE EDITION */
+#v25info{left:14px;bottom:15px;padding:10px 13px;width:210px;font-size:10px;line-height:1.55}
+#v25info b{color:#7fd4ff;letter-spacing:1px}
+#v25info .small{color:#b9c7d2}
+#radioBox{right:195px;bottom:15px;padding:9px 13px;min-width:175px;font-size:10px}
+#radioStation{font-weight:900;color:#ffd45b;letter-spacing:1px}
+#weatherBadge{color:#9fdcff}
+@media(max-width:700px){#radioBox{right:160px;bottom:18px;min-width:130px;font-size:9px}#v25info{width:175px;font-size:9px;bottom:175px}}
+
+
+/* V26 SOUNDTRACK */
+#musicBtn{background:linear-gradient(135deg,#27384a,#101820);border:1px solid #6bc4ff;color:#fff}
+#musicBtn.on{background:linear-gradient(135deg,#1c6f4c,#123b2a);box-shadow:0 0 18px rgba(70,220,150,.35)}
+
+
+/* V60 MASSIVE MILESTONE EDITION */
+#audioPanel{position:absolute;right:14px;bottom:275px;z-index:10;background:#0b1620dd;border:1px solid #ffffff22;border-radius:10px;padding:8px 10px;font-size:9px;color:#b9c7d2}
+#audioPanel b{color:#8fd3ff}
+
+#factionHud{position:absolute;left:14px;top:72px;background:#0b1620dd;border:1px solid #ffffff22;border-radius:10px;padding:9px 12px;font-size:10px;color:#cbd9e5;z-index:9}
+#factionHud b{color:#ffcf73}
+#deliveryHud{position:absolute;left:50%;top:125px;transform:translateX(-50%);display:none;background:#142231e8;border:1px solid #7fd4ff;border-radius:10px;padding:8px 15px;color:#fff;font-size:11px;z-index:10;text-align:center}
+#deliveryHud b{color:#ffd46b}
+
+/* V34 3D GRAPHICS */
+#graphicsBadge{position:absolute;right:14px;top:72px;z-index:12;background:#111c28e8;border:1px solid #70caff66;border-radius:9px;padding:7px 10px;font-size:9px;color:#bfe9ff}
+#graphicsBadge b{color:#7fd4ff}
+
+
+#mapBuildBadge{position:absolute;right:14px;top:120px;z-index:12;background:#0b1620e8;border:1px solid #76d5ff55;border-radius:9px;padding:8px 11px;font-size:9px;color:#d7e7f2}
+#mapBuildBadge b{color:#79d5ff}
+
+
+#v37badge{position:absolute;right:14px;top:165px;z-index:12;background:#121820e8;border:1px solid #ffcf7355;border-radius:9px;padding:8px 11px;font-size:9px;color:#eee}
+#v37badge b{color:#ffd27a}
+
+#v39badge{position:absolute;right:14px;top:210px;z-index:12;background:#13251ae8;border:1px solid #79d58a55;border-radius:9px;padding:8px 11px;font-size:9px;color:#d9f0df}#v39badge b{color:#8ee59e}
+#missionPackBadge{position:absolute;right:14px;top:255px;z-index:12;background:#23151ae8;border:1px solid #ff9c7355;border-radius:9px;padding:8px 11px;font-size:9px;color:#f5dddd}#missionPackBadge b{color:#ffae86}
+
+#gpsHud{position:absolute;right:14px;bottom:14px;width:180px;background:#081018e8;border:1px solid #6bc8ff66;border-radius:10px;padding:9px;z-index:15;font-size:10px;color:#dbeeff}
+#gpsHud b{color:#78d5ff} #gpsBar{height:5px;background:#172938;border-radius:4px;margin-top:6px;overflow:hidden}#gpsFill{height:100%;width:0%;background:#78d5ff}
+#missionPopup{position:absolute;left:50%;top:18%;transform:translateX(-50%);display:none;background:#101820f2;border:1px solid #ffd27a88;border-radius:12px;padding:16px 24px;text-align:center;z-index:30;color:#fff;min-width:260px}
+
+#v41badge{position:absolute;right:14px;top:300px;z-index:12;background:#101b28e8;border:1px solid #78d5ff55;border-radius:9px;padding:8px 11px;font-size:9px;color:#d9ecff}#v41badge b{color:#78d5ff}
+
+#eventHud{position:absolute;left:14px;bottom:14px;width:205px;background:#171018e8;border:1px solid #ffb36b66;border-radius:10px;padding:9px;z-index:16;font-size:10px;color:#f7e5d8}
+#eventHud b{color:#ffbd7d}.eventBtn{margin-top:6px;width:100%;background:#263441;color:#fff;border:1px solid #ffffff33;border-radius:5px;padding:5px;font-size:9px}
+
+#v42badge{position:absolute;right:14px;top:345px;z-index:12;background:#24160fe8;border:1px solid #ffb36b55;border-radius:9px;padding:8px 11px;font-size:9px;color:#ffe2cb}#v42badge b{color:#ffbd7d}
+
+#v43badge{position:absolute;right:14px;top:390px;z-index:12;background:#101923e8;border:1px solid #8bd7ff66;border-radius:9px;padding:8px 11px;font-size:9px;color:#e4f4ff}#v43badge b{color:#8bd7ff}
+
+
+#v44badge{position:absolute;right:14px;top:435px;z-index:12;background:#15151ce8;border:1px solid #91e0c066;border-radius:9px;padding:8px 11px;font-size:9px;color:#e4fff3}#v44badge b{color:#91e0c0}
+#driveHint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;background:#0b1119d9;border-radius:8px;padding:6px 12px;font-size:9px;color:#cfe8f5}
+
+
+#v45badge{position:absolute;right:14px;top:480px;z-index:12;background:#18121ee8;border:1px solid #c796ff66;border-radius:9px;padding:8px 11px;font-size:9px;color:#f1e5ff}#v45badge b{color:#d3a8ff}
+#speedometer{position:absolute;right:18px;bottom:18px;width:92px;height:92px;border-radius:50%;background:#081018e8;border:3px solid #c796ff88;z-index:20;text-align:center;color:#fff;font-family:Arial;padding-top:18px;box-sizing:border-box}
+#speedometer strong{font-size:24px;color:#d9b5ff}#speedometer span{font-size:8px;color:#9ca8b5}
+
+
+#v46badge{position:absolute;right:14px;top:525px;z-index:12;background:#101820e8;border:1px solid #ffcf5c66;border-radius:9px;padding:8px 11px;font-size:9px;color:#fff2cf}#v46badge b{color:#ffd36b}
+#vehicleHud{position:absolute;left:14px;bottom:145px;background:#0c131ce8;border:1px solid #ffffff22;border-radius:9px;padding:8px;z-index:18;font-size:9px;color:#e7eef5}
+
+
+#v47badge{position:absolute;right:14px;top:570px;z-index:12;background:#111a16e8;border:1px solid #7ee6a466;border-radius:9px;padding:8px 11px;font-size:9px;color:#e5fff0}#v47badge b{color:#7ee6a4}
+
+
+#v48badge{position:absolute;right:14px;top:615px;z-index:12;background:#101822e8;border:1px solid #6ea8ff66;border-radius:9px;padding:8px 11px;font-size:9px;color:#e5efff}#v48badge b{color:#8db9ff}
+#weatherHud{position:absolute;left:14px;top:165px;z-index:18;background:#0b1420df;border:1px solid #7eb9ff55;border-radius:9px;padding:8px 11px;font-size:10px;color:#ddecff}
+
+
+#v49badge{position:absolute;right:14px;top:660px;z-index:12;background:#16111ee8;border:1px solid #d3a8ff66;border-radius:9px;padding:8px 11px;font-size:9px;color:#f3e8ff}#v49badge b{color:#d3a8ff}
+#healthHud{position:absolute;left:14px;top:215px;z-index:18;background:#0c1119e8;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;font-size:9px;color:#fff}
+.barOuter{width:120px;height:6px;background:#252b33;border-radius:4px;margin-top:4px;overflow:hidden}.barInner{height:100%;width:100%;background:#8ee0a6}
+
+
+#v50badge{position:absolute;right:14px;top:705px;z-index:12;background:#20150de8;border:1px solid #ffd36b77;border-radius:9px;padding:8px 11px;font-size:9px;color:#fff0cf}#v50badge b{color:#ffd36b}
+#miniMap{position:absolute;right:18px;bottom:125px;width:145px;height:105px;background:#091019e8;border:2px solid #ffffff33;border-radius:9px;z-index:25}
+#garageBtn{position:absolute;left:14px;top:270px;z-index:22;background:#172231e8;color:#fff;border:1px solid #7ac7ff88;border-radius:7px;padding:7px 10px;font-size:9px}
+#garagePanel{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;width:310px;background:#0c121beF;border:1px solid #ffd36b88;border-radius:14px;padding:18px;color:#fff;text-align:center}
+.garageCar{display:inline-block;width:82px;margin:6px;padding:8px;background:#182332;border:1px solid #ffffff22;border-radius:8px;font-size:9px;cursor:pointer}
+.garageCar:hover{border-color:#ffd36b}
+
+
+#v51badge{position:absolute;right:14px;top:750px;z-index:12;background:#142018e8;border:1px solid #8ee0a666;border-radius:9px;padding:8px 11px;font-size:9px;color:#e8fff0}#v51badge b{color:#8ee0a6}
+#cityLifeHud{position:absolute;left:14px;top:320px;z-index:20;background:#0d151ee8;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;font-size:9px;color:#dce8f2}
+
+
+#v52badge{position:absolute;right:14px;top:795px;z-index:12;background:#20130de8;border:1px solid #ff9d5c66;border-radius:9px;padding:8px 11px;font-size:9px;color:#fff0df}#v52badge b{color:#ffb072}
+#progressHud{position:absolute;left:14px;top:370px;z-index:20;background:#111923e8;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;font-size:9px;color:#dce8f2}
+
+
+#v53badge{position:absolute;right:14px;top:840px;z-index:12;background:#15112ae8;border:1px solid #a98cff77;border-radius:9px;padding:8px 11px;font-size:9px;color:#eee8ff}#v53badge b{color:#bca4ff}
+#statsHud{position:absolute;left:14px;top:420px;z-index:20;background:#0b111be8;border:1px solid #ffffff22;border-radius:9px;padding:9px 11px;font-size:9px;color:#dce8f2}
+#districtNotice{position:absolute;left:50%;top:12%;transform:translateX(-50%);z-index:28;background:#0b1320e8;border:1px solid #8ac8ff55;border-radius:9px;padding:7px 16px;font-size:10px;color:#e6f5ff;display:none}
+
+
+#v54badge{position:absolute;right:14px;top:840px;z-index:12;background:#182019e8;border:1px solid #73e0a077;border-radius:9px;padding:8px 11px;font-size:9px;color:#e8fff0}#v54badge b{color:#73e0a0}
+#businessBtn{position:absolute;left:14px;top:470px;z-index:22;background:#172b20e8;color:#eafff0;border:1px solid #73e0a077;border-radius:7px;padding:7px 10px;font-size:9px}
+#businessPanel{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:55;width:350px;background:#0c1511f5;border:1px solid #73e0a088;border-radius:14px;padding:18px;color:#fff}
+.businessCard{margin:7px 0;padding:9px;background:#17231c;border-radius:8px;font-size:10px;border:1px solid #ffffff18}
+
+
+#v55badge{position:absolute;right:14px;top:840px;z-index:12;background:#20151de8;border:1px solid #e58cb777;border-radius:9px;padding:8px 11px;font-size:9px;color:#ffe8f2}#v55badge b{color:#f2a1c8}
+#socialBtn{position:absolute;left:14px;top:520px;z-index:22;background:#2b1725e8;color:#fff0f7;border:1px solid #e58cb777;border-radius:7px;padding:7px 10px;font-size:9px}
+#socialPanel{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:55;width:330px;background:#15101af5;border:1px solid #e58cb788;border-radius:14px;padding:18px;color:#fff}
+.dialogueBubble{position:absolute;display:none;left:50%;bottom:70px;transform:translateX(-50%);z-index:45;max-width:420px;background:#0c111beF;border:1px solid #ffffff33;border-radius:12px;padding:12px 18px;color:#fff;text-align:center;font-size:12px}
+
+
+#v56badge{position:absolute;right:14px;top:840px;z-index:12;background:#112126e8;border:1px solid #62d5d077;border-radius:9px;padding:8px 11px;font-size:9px;color:#e7ffff}#v56badge b{color:#62d5d0}
+#activityBtn{position:absolute;left:14px;top:570px;z-index:22;background:#123034e8;color:#eaffff;border:1px solid #62d5d077;border-radius:7px;padding:7px 10px;font-size:9px}
+#activityPanel{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:55;width:350px;background:#0c1619f5;border:1px solid #62d5d088;border-radius:14px;padding:18px;color:#fff}
+.activityCard{margin:7px 0;padding:10px;background:#14262a;border-radius:8px;font-size:10px;border:1px solid #ffffff18}
+
+
+#v57badge{position:absolute;right:14px;top:840px;z-index:12;background:#1b1820e8;border:1px solid #b9a6ff77;border-radius:9px;padding:8px 11px;font-size:9px;color:#f0ebff}#v57badge b{color:#c7b7ff}
+#interiorPanel{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;width:440px;height:290px;background:linear-gradient(145deg,#302820,#15181e);border:2px solid #d6b478;border-radius:14px;padding:18px;color:#fff;box-shadow:0 20px 80px #000}
+#interiorScene{height:175px;border-radius:8px;margin:12px 0;background:linear-gradient(#6b5540,#29231f);position:relative;overflow:hidden}
+
+
+#v58badge{position:absolute;right:14px;top:840px;z-index:12;background:#10161fe8;border:1px solid #71c7ff77;border-radius:9px;padding:8px 11px;font-size:9px;color:#e9f6ff}#v58badge b{color:#78cfff}
+
+
+#v59badge{position:absolute;right:14px;top:840px;z-index:12;background:#111820e8;border:1px solid #ffcf7077;border-radius:9px;padding:8px 11px;font-size:9px;color:#fff4dc}#v59badge b{color:#ffd070}
+#landmarkHud{position:absolute;left:14px;top:620px;z-index:22;background:#101820e8;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;font-size:9px;color:#e6edf4;max-width:190px}
+
+
+#v60badge{position:absolute;right:14px;top:840px;z-index:20;background:#21140de8;border:1px solid #ffb04d99;border-radius:10px;padding:10px 13px;font-size:10px;color:#fff0db;box-shadow:0 4px 20px #0008}#v60badge b{color:#ffc06a;font-size:11px}
+#v60menu{position:absolute;right:14px;top:14px;z-index:30;background:#0b121beF;border:1px solid #ffffff22;border-radius:10px;padding:8px;display:flex;gap:5px}
+#v60menu button{font-size:8px;padding:6px 8px}
+#v60panel{display:none;position:absolute;right:14px;top:55px;z-index:60;width:260px;background:#0a111af8;border:1px solid #ffb04d77;border-radius:12px;padding:14px;color:#fff;font-size:10px}
+#v60panel h3{margin:0 0 8px;color:#ffc06a}.v60row{padding:7px 0;border-bottom:1px solid #ffffff12}
+#wantedHud{position:absolute;left:14px;top:675px;z-index:22;background:#11131ae8;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;font-size:9px;color:#fff}
+
+</style>
+
+<style id="playableFix">
+#start{
+  z-index:99999!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+#start .card{
+  position:relative!important;
+  z-index:100000!important;
+}
+#play{
+  position:relative!important;
+  z-index:100001!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  min-height:58px!important;
+}
+body:not(.gameStarted) #hud,
+body:not(.gameStarted) #garageBtn,
+body:not(.gameStarted) #businessBtn,
+body:not(.gameStarted) #socialBtn,
+body:not(.gameStarted) #activityBtn,
+body:not(.gameStarted) #v60menu,
+body:not(.gameStarted) #v60panel,
+body:not(.gameStarted) #garagePanel,
+body:not(.gameStarted) #businessPanel,
+body:not(.gameStarted) #socialPanel,
+body:not(.gameStarted) #activityPanel,
+body:not(.gameStarted) #interiorPanel,
+body:not(.gameStarted) #miniMap,
+body:not(.gameStarted) #v60badge,
+body:not(.gameStarted) #v59badge,
+body:not(.gameStarted) #v58badge,
+body:not(.gameStarted) #v57badge,
+body:not(.gameStarted) #v56badge,
+body:not(.gameStarted) #v55badge,
+body:not(.gameStarted) #v54badge,
+body:not(.gameStarted) #v53badge,
+body:not(.gameStarted) #v52badge,
+body:not(.gameStarted) #v51badge,
+body:not(.gameStarted) #v50badge,
+body:not(.gameStarted) #v49badge{display:none!important}
+</style>
+
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud">
+ <div id="top" class="panel"><div id="title">BELFAST STREETS <span style="color:#70c4ff">V10</span></div><div id="sub">MISSIONS & CHARACTERS UPDATE</div>
+ <div class="stat">HEALTH<div class="bar"><div id="health" class="fill"></div></div></div>
+ <div class="stat">STAMINA<div class="bar"><div id="stamina" class="fill"></div></div></div></div>
+ <div id="mission" class="panel"><div class="mission-title">★ CITY PATROL</div><div id="missionDesc">Explore Belfast and reach the <b>Titanic Quarter</b></div><div id="missionBrief" style="font-size:9px;color:#a8c7db;margin-top:5px"></div><div id="location" style="font-size:10px;color:#74c4ff;margin-top:4px">LOCATION: WEST BELFAST</div></div>
+ <div id="wanted" class="panel"><span class="label">WANTED LEVEL</span>☆☆☆☆☆<div id="money" style="font-size:15px;color:#75e8a1;margin-top:8px">£500</div><div id="carStatus" style="display:none;font-size:10px;color:#ffcf68;margin-top:7px">VEHICLE: 100%</div></div>
+ <div id="msg" class="panel">Welcome to Belfast Streets V10</div>
+ <div id="miniWrap" class="panel"><span class="panelTitle">CITY MAP</span><canvas id="mini"></canvas></div>
+</div>
+<div id="deliveryHud"><b id="deliveryTitle">DELIVERY</b><br><span id="deliveryText">Collect the sealed package</span></div>
+<div id="graphicsBadge"><b>V34 GRAPHICS</b><br>3D CITY RENDER</div>
+<div id="mapBuildBadge"><b>V36 ULTRA MAP</b><br>EXPANDED ROAD NETWORK</div>
+<div id="v37badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>BUILDINGS • SHOPS • LIGHTS</div>
+<div id="v39badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>SHOPS ACROSS THE CITY</div>
+<div id="missionPackBadge"><b>V40 MISSION PACK</b><br>20 STORY & SIDE MISSIONS</div>
+<div id="missionPopup"><b id="mpTitle">MISSION START</b><br><span id="mpText"></span></div>
+<div id="gpsHud"><b>GPS NAVIGATION</b><br><span id="gpsTarget">No active target</span><div id="gpsBar"><div id="gpsFill"></div></div><span id="gpsDistance"></span></div>
+<div id="v41badge"><b>V41 GPS MISSIONS</b><br>NAVIGATION • MARKERS • REWARDS</div>
+<div id="eventHud"><b>CITY EVENTS</b><br><span id="eventStatus">Explore Belfast for activities</span><button class="eventBtn" onclick="startRaceEvent()">START STREET CIRCUIT</button><button class="eventBtn" onclick="startTaxiEvent()">START TAXI JOB</button></div>
+<div id="v42badge"><b>V42 CITY EVENTS</b><br>RACES • TAXI JOBS • ACTIVITIES</div>
+<div id="v43badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>LIGHTING • SHADOWS • DETAIL</div>
+<div id="v44badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>SMOOTHER • RESPONSIVE • BRAKING</div><div id="driveHint">WASD / Arrow Keys • Space = Handbrake</div>
+<div id="v45badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>HANDLING • DAMAGE • SPEED</div><div id="speedometer"><strong id="speedValue">0</strong><br><span>KM/H</span></div>
+<div id="v46badge"><b>V46 MULTI-VEHICLE</b><br>TAXIS • VANS • BUSES • TRAFFIC</div><div id="vehicleHud"><b>TRAFFIC SYSTEM</b><br><span id="vehicleCount">0 vehicles active</span><br><span id="currentVehicle">Player Car</span></div>
+<div id="v47badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>LIGHTS • ROAD ROUTES • PEDESTRIANS</div>
+<div id="v48badge"><b>V48 WEATHER SYSTEM</b><br>RAIN • FOG • NIGHT • WET ROADS</div><div id="weatherHud"><b id="weatherName">☀ CLEAR DAY</b><br><span id="weatherTime">12:00</span></div>
+<div id="v49badge"><b>V49 GRAPHICS + GAMEPLAY</b><br>GARAGE • HUD • EFFECTS • SMOOTHER CITY</div><div id="healthHud"><b>VEHICLE CONDITION</b><div class="barOuter"><div id="healthBar" class="barInner"></div></div><span id="healthText">100%</span></div>
+<button id="garageBtn" onclick="toggleGarage()">🚗 GARAGE</button>
+<canvas id="miniMap" width="290" height="210"></canvas>
+<div id="garagePanel"><b style="color:#ffd36b;font-size:16px">BELFAST GARAGE</b><p style="font-size:9px;color:#b8c7d5">Choose your vehicle</p>
+<div class="garageCar" onclick="selectVehicle('Compact')">🚗<br>COMPACT<br><small>Balanced</small></div>
+<div class="garageCar" onclick="selectVehicle('Taxi')">🚕<br>TAXI<br><small>Heavy</small></div>
+<div class="garageCar" onclick="selectVehicle('Sport')">🏎️<br>SPORT<br><small>Fast</small></div>
+<div class="garageCar" onclick="selectVehicle('Jeep')">🚙<br>JEEP<br><small>Strong</small></div>
+<p id="selectedVehicle" style="font-size:10px;color:#8ee0a6">Current: Compact</p>
+<button class="eventBtn" onclick="toggleGarage()">CLOSE GARAGE</button></div>
+<div id="v50badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>GARAGE • MINIMAP • VEHICLES • POLISH</div>
+<div id="v51badge"><b>V51 CITY LIFE</b><br>MORE PEOPLE • AMBIENCE • ACTIVITIES</div><div id="cityLifeHud"><b>CITY STATUS</b><br><span id="cityLifeStatus">Belfast is active</span></div>
+<div id="v52badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>MORE DETAIL • MORE ACTION • MORE CITY</div><div id="progressHud"><b>WORLD ACTIVITY</b><br><span id="activityText">Exploring Belfast</span></div>
+<div id="v53badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>XP • DISTRICTS • RANDOM EVENTS</div><div id="districtNotice"></div><div id="statsHud"><b>PLAYER STATS</b><br>Level <span id="levelText">1</span> • XP <span id="xpText">0</span><br><span id="districtText">District: Belfast</span></div>
+<div id="v54badge"><b>V54 PROPERTIES</b><br>SAFEHOUSES • BUSINESSES • INCOME</div><button id="businessBtn" onclick="toggleBusinessPanel()">🏢 PROPERTY</button>
+<div id="businessPanel"><h3 style="color:#73e0a0;margin-top:0">BELFAST PROPERTY & BUSINESS</h3>
+<div class="businessCard"><b>City Flat</b><br><small>Safehouse and spawn point</small><br><button onclick="buyAsset('flat')">Buy £5,000</button></div>
+<div class="businessCard"><b>Corner Shop</b><br><small>Earn passive city income</small><br><button onclick="buyAsset('shop')">Buy £12,000</button></div>
+<div class="businessCard"><b>Taxi Company</b><br><small>Unlock taxi bonus rewards</small><br><button onclick="buyAsset('taxi')">Buy £25,000</button></div>
+<div class="businessCard"><b>Garage</b><br><small>Improved vehicle upgrades</small><br><button onclick="buyAsset('garage')">Buy £40,000</button></div>
+<p id="assetStatus" style="font-size:9px;color:#b9c9c0">No assets owned yet</p>
+<button onclick="toggleBusinessPanel()">CLOSE</button></div>
+<div id="v55badge"><b>V55 CHARACTER SYSTEM</b><br>STYLE • REPUTATION • NPC DIALOGUE</div><button id="socialBtn" onclick="toggleSocialPanel()">👤 CHARACTER</button>
+<div id="socialPanel"><h3 style="color:#f2a1c8;margin-top:0">CHARACTER PROFILE</h3>
+<p>Style: <span id="styleText">Street</span></p>
+<button onclick="changeStyle('Street')">Street</button>
+<button onclick="changeStyle('Smart')">Smart</button>
+<button onclick="changeStyle('Sport')">Sport</button>
+<hr style="border-color:#ffffff22"><p>Reputation: <b id="repText">0</b></p>
+<p style="font-size:9px;color:#b9aeba">Complete activities and interact positively with the city.</p>
+<button onclick="toggleSocialPanel()">CLOSE</button></div>
+<div id="dialogueBubble" class="dialogueBubble"></div>
+<div id="v56badge"><b>V56 CITY ACTIVITIES</b><br>SHOPS • CHALLENGES • NEW MISSIONS</div><button id="activityBtn" onclick="toggleActivityPanel()">📍 ACTIVITIES</button>
+<div id="activityPanel"><h3 style="color:#62d5d0;margin-top:0">BELFAST ACTIVITIES</h3>
+<div class="activityCard"><b>☕ Café Stop</b><br><small>Take a break and recover vehicle condition.</small><br><button onclick="startV56Activity('cafe')">Start</button></div>
+<div class="activityCard"><b>📦 City Delivery</b><br><small>Timed delivery for cash and XP.</small><br><button onclick="startV56Activity('delivery')">Start</button></div>
+<div class="activityCard"><b>🏁 Time Trial</b><br><small>Reach checkpoints before time runs out.</small><br><button onclick="startV56Activity('trial')">Start</button></div>
+<div class="activityCard"><b>🗺️ Explorer Challenge</b><br><small>Visit a new district for rewards.</small><br><button onclick="startV56Activity('explore')">Start</button></div>
+<p id="activityStatus" style="font-size:9px;color:#b7d4d5">Choose something to do.</p>
+<button onclick="toggleActivityPanel()">CLOSE</button></div>
+<div id="v57badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>DETAILED CITY • ENTERABLE LOCATIONS</div><div id="interiorPanel"><b id="interiorTitle" style="font-size:18px;color:#f2d39a">BUILDING INTERIOR</b>
+<div id="interiorScene"></div><div id="interiorText" style="font-size:10px;color:#d8d0c4"></div>
+<button onclick="closeInterior()">EXIT BUILDING</button></div>
+<div id="v58badge"><b>V60 MASSIVE MILESTONE EDITION</b><br>TEXTURES • SHADOWS • LIGHTING • DEPTH</div>
+<div id="v59badge"><b>V59 REALISTIC BELFAST</b><br>LANDMARKS • DISTRICTS • LOCAL CHARACTER</div><div id="landmarkHud"><b>NEARBY LANDMARK</b><br><span id="landmarkText">Exploring Belfast</span></div>
+<div id="v60badge"><b>V60 MASSIVE MILESTONE</b><br>EXPANDED WORLD • PROGRESSION • EVENTS</div><div id="v60menu"><button onclick="toggleV60Panel('world')">🌍 WORLD</button><button onclick="toggleV60Panel('stats')">📊 STATS</button><button onclick="toggleV60Panel('help')">❔ HELP</button></div>
+<div id="v60panel"></div>
+<div id="wantedHud"><b>CITY HEAT</b><br><span id="heatStars">☆ ☆ ☆ ☆ ☆</span></div>
+<div id="districtBanner">BELFAST CITY</div><div id="versionBadge">V24 • MASSIVE CITY UPDATE</div><div id="ammoHud" style="position:absolute;right:14px;bottom:225px;background:#0b1620cc;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;font-size:11px;color:#dcecff">ACTION: READY<br><span id="ammoCount">AMMO: ∞</span></div>
+<div id="factionHud"><b>UNDERGROUND STATUS</b><br>CREW: <span id="crewName">INDEPENDENT</span><br>RESPECT: <span id="streetRep">0</span></div>
+<div id="cityHud" style="position:absolute;right:14px;top:72px;background:#0b1620cc;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;font-size:10px;color:#dcecff">CITY STATUS<br><span id="districtName">CENTRAL BELFAST</span><br>TIME <span id="clock">12:00</span></div>
+<div id="dialogueBox" style="display:none;position:absolute;left:50%;bottom:145px;transform:translateX(-50%);width:min(88%,520px);background:#101b26eF;border:1px solid #6aa9d4;border-radius:14px;padding:14px;color:white;z-index:8;box-shadow:0 10px 30px #0008"><div id="speaker" style="color:#8fd3ff;font-weight:bold;font-size:12px;letter-spacing:1px"></div><div id="dialogueText" style="margin-top:7px;line-height:1.4"></div><div style="margin-top:8px;font-size:10px;color:#aab8c4">Tap ACTION to continue</div></div>
+<div id="v25info" class="panel"><b>BELFAST STREETS V60</b><br><span class="small">RANK: <span id="rankName">ROOKIE</span> • REP <span id="rep">0</span><br>XP <span id="xp">0</span> • WEATHER <span id="weatherBadge">CITY RAIN</span></span></div>
+<div id="radioBox" class="panel"><span class="label">CITY RADIO</span><span id="radioStation">BELFAST FM • NIGHT DRIVE</span></div>
+
+
+<div id="audioPanel"><b>ULTIMATE AUDIO</b><br>
+<span id="audioStatus">ENGINE • FOOTSTEPS • RAIN • SIRENS</span></div>
+
+<div id="controls">
+<button id="musicBtn" onclick="toggleMusic()">♫ MUSIC: OFF</button><button id="voiceBtn" onclick="voicesEnabled=!voicesEnabled;this.textContent=voicesEnabled?'🔊 VOICES: ON':'🔇 VOICES: OFF'">🔊 VOICES: ON</button><div class="pad" id="pad"><div class="knob" id="knob"></div></div><div class="btn" id="action">ACTION</div><div id="help">Move: WASD / Arrow keys • Space = ACTION / talk to characters • E = enter/exit • iPad: tap ACTION to interact, double-tap near cars/buildings</div></div>
+<div id="interior"><div id="room"><button id="exitRoom">EXIT BUILDING</button><h2 id="roomTitle">CITY BUILDING</h2><div id="roomDecor"></div><div id="roomAction"></div><div class="counter"></div><div class="shelf s1"></div><div class="shelf s2"></div><div class="door"></div></div><div id="interiorInfo">You are inside. Explore the building and press EXIT when finished.</div></div>
+<div id="start"><div class="card"><h1>BELFAST STREETS V60</h1><p><b>GRAPHICS UPGRADE</b><br>V60 MASSIVE MILESTONE EDITION: bigger Belfast, improved traffic, expanded missions, named characters, dynamic weather, radio, reputation, landmarks and stability fixes.</p><button id="play">ENTER BELFAST V60</button></div></div>
+<script>
+const c=document.getElementById('game'),x=c.getContext('2d'),mini=document.getElementById('mini'),mx=mini.getContext('2d');
+let W,H,DPR,keys={},running=false,touch={x:0,y:0,on:false},cam={x:0,y:0};
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';x.setTransform(DPR,0,0,DPR,0,0);mini.width=332;mini.height=332;mx.setTransform(2,0,0,2,0,0)}addEventListener('resize',resize);resize();
+
+const world={w:3600,h:2600};
+const roads=[
+ {x:0,y:1160,w:3600,h:210},{x:1550,y:0,w:230,h:2600},{x:520,y:450,w:2500,h:175},{x:550,y:1850,w:2450,h:190},{x:330,y:420,w:180,h:1600},{x:2600,y:350,w:190,h:1900}
+];
+const blocks=[];
+for(let gy=0;gy<9;gy++)for(let gx=0;gx<13;gx++){
+ let bx=gx*270+80+(gy%2)*22,by=gy*275+80;
+ if(Math.abs(bx-1665)<230||Math.abs(by-1250)<180||Math.abs(by-535)<160||Math.abs(by-1940)<170||Math.abs(bx-420)<160||Math.abs(bx-2700)<170)continue;
+ let bw=125+((gx*37+gy*19)%90),bh=105+((gx*53+gy*17)%105);
+ blocks.push({x:bx,y:by,w:bw,h:bh,hgt:18+((gx*11+gy*13)%36),tone:(gx+gy)%4});
+}
+const lamps=[];for(let i=120;i<3500;i+=170){lamps.push({x:i,y:1115});lamps.push({x:i,y:1415})}
+const player={x:900,y:1650,vx:0,vy:0,dir:0,walk:0,health:100,stamina:100,money:500,name:'RILEY'};
+let missionIndex=0, missionDone=false;
+let dayTime=0.35, inVehicle=null, inside=false; const projectiles=[]; let aimAngle=0;
+let dialogueOpen=false, dialogueQueue=[], cityHeat=0, missionStage=0, lastDistrict='';
+let deliveryActive=false,deliveryStage=0,deliveryItem='SEALED PACKAGE';
+const districts=[
+ {name:'WEST BELFAST',x:700,y:1450,r:700},
+ {name:'CITY CENTRE',x:1650,y:950,r:600},
+ {name:'TITANIC QUARTER',x:2700,y:600,r:750},
+ {name:'SOUTH BELFAST',x:1500,y:1950,r:750}
+];
+const missions=[
+ {name:'PACKAGE RUN',desc:'Collect a sealed package from the courier',x:820,y:1265,reward:150,brief:'Your first delivery across the city.'},
+ {name:'CITY DROP',desc:'Meet the city contact',x:1900,y:535,reward:300,brief:'Cross Belfast and make the drop.'},
+ {name:'GARAGE COLLECTION',desc:'Collect an important envelope',x:2100,y:1820,reward:450,brief:'The garage contact has something for you.'},
+ {name:'DOCKLAND DELIVERY',desc:'Reach the docks',x:2800,y:520,reward:700,brief:'A waterfront meeting is waiting.'},
+ {name:'NIGHT RUN',desc:'Travel through South Belfast',x:1250,y:2050,reward:900,brief:'Complete the route after dark.'},
+ {name:'SAFE HOUSE DROP',desc:'Return to the safe house',x:760,y:2080,reward:1200,brief:'Get back before the trail goes cold.'},
+ {name:'EASTSIDE EXPRESS',desc:'Cross to East Belfast',x:3180,y:1200,reward:1600,brief:'A priority contact is waiting.'},
+ {name:'LOST WALLET',desc:'Find and return a missing wallet',x:1600,y:1450,reward:180,brief:'A civilian needs help finding something important.'},
+ {name:'TAXI TROUBLE',desc:'Pick up a stranded passenger',x:1350,y:900,reward:220,brief:'Get them safely across town.'},
+ {name:'THE LONG WALK',desc:'Visit five Belfast landmarks',x:1880,y:700,reward:350,brief:'A city tour challenge with checkpoints.'},
+ {name:'PUB QUIZ DASH',desc:'Reach the next pub before time runs out',x:1450,y:1080,reward:400,brief:'A fast-paced city challenge.'},
+ {name:'GARAGE RESCUE',desc:'Recover a broken-down vehicle',x:2450,y:1600,reward:550,brief:'The mechanic needs assistance.'},
+ {name:'MARKET ERRAND',desc:'Collect supplies at St George’s Market',x:2100,y:1820,reward:300,brief:'Complete the shopping list.'},
+ {name:'CITY PHOTOGRAPHER',desc:'Photograph three landmarks',x:2080,y:560,reward:500,brief:'Explore Belfast and capture the sights.'},
+ {name:'MONAGH TIME TRIAL',desc:'Drive the Monagh Bypass route',x:620,y:710,reward:650,brief:'Beat the target time without crashing.'},
+ {name:'CRANE WATCH',desc:'Reach Harland & Wolff',x:2920,y:360,reward:750,brief:'A contact is waiting beneath the cranes.'},
+ {name:'MIDNIGHT TAXI',desc:'Complete three passenger pickups',x:1750,y:1500,reward:850,brief:'A busy night shift across Belfast.'},
+ {name:'THE MISSING COURIER',desc:'Find the courier across the city',x:900,y:1450,reward:1000,brief:'Follow the clues between districts.'},
+ {name:'CITY CHAMPION',desc:'Complete a grand Belfast circuit',x:1660,y:620,reward:1500,brief:'The ultimate driving and exploration challenge.'},
+ {name:'FINAL CITY CONTRACT',desc:'Meet the final contact',x:340,y:420,reward:2200,brief:'Finish the campaign and unlock free roam.'}
+];
+const cars=[],police=[],peds=[];
+for(let i=0;i<58;i++)cars.push({x:150+i*130,y:1230+(i%3)*52,v:1.2+(i%4)*.35,col:['#d53b38','#d4d6dd','#255c9b','#c98b2b','#4b944f'][i%5],axis:'x',parked:i%6===0,damage:0,maxDamage:100});
+for(let i=0;i<7;i++)police.push({x:1590+(i%3)*58,y:200+i*310,v:.85+i*.08,phase:i*1.2});
+const npcNames=['Aiden','Maya','Connor','Leah','Finn','Erin','Jamie','Niamh','Callum','Ruby','Sean','Aoife'];
+for(let i=0;i<110;i++)peds.push({
+ x:180+((i*173)%3200),y:170+((i*239)%2200),dir:i*.73,speed:.15+(i%3)*.04,
+ walk:i,down:0,hitX:0,hitY:0,name:npcNames[i%npcNames.length],
+ outfit:i%5,important:i%13===0
+});
+const missionNPCs=[
+ {x:820,y:1265,name:'COURIER',role:'Courier'},
+ {x:1900,y:535,name:'MORGAN',role:'Contact'},
+ {x:2100,y:1820,name:'MECHANIC',role:'Garage'},
+ {x:2800,y:520,name:'DOCKMASTER',role:'Dock'},
+ {x:1250,y:2050,name:'LEAH',role:'Contact'},
+ {x:760,y:2080,name:'SAFE HOUSE',role:'Contact'},
+ {x:3180,y:1200,name:'DISPATCH',role:'Contact'},
+ {x:340,y:420,name:'FINAL CONTACT',role:'Contact'}
+];
+const rain=[];for(let i=0;i<160;i++)rain.push({x:Math.random()*W,y:Math.random()*H,l:10+Math.random()*18,s:8+Math.random()*10});
+
+function roadContains(px,py){return roads.some(r=>px>r.x&&px<r.x+r.w&&py>r.y&&py<r.y+r.h)}
+
+/* ================= V28 CHARACTER VOICES ================= */
+let voicesEnabled=true;
+const npcVoiceLines={
+ 'Street NPC':['You, my love, how are ye doing?','You, my love, this city is wild tonight.','Aye, you my love, keep her lit!','What about ye, my love?'],
+ 'Courier':['Lick my bag. You heard me.','Get moving. The city never waits.'],
+ 'Contact':['Burn in hell if you think I am doing this for free.','Keep your head down and finish the job.'],
+ 'Garage':['Your car is ready. Try not to wreck it again.','That engine sounds terrible.'],
+ 'Dock':['The docks are quiet tonight. Too quiet.'],
+ 'FINAL CONTACT':['You made it this far. Now finish what you started.'],
+ 'Crew':['This city has its own rules.','Keep your crew together and watch your back.','Respect matters around here.']
+ 'Courier':['Lick my bag. You heard me.','Get moving. The city never waits.'],
+ 'Contact':['Burn in hell if you think I am doing this for free.','Keep your head down and finish the job.'],
+ 'Garage':['Your car is ready. Try not to wreck it again.','That engine sounds terrible.'],
+ 'Dock':['The docks are quiet tonight. Too quiet.'],
+ 'FINAL CONTACT':['You made it this far. Now finish what you started.'],
+ 'Crew':['This city has its own rules.','Keep your crew together and watch your back.','Respect matters around here.']
+};
+let ambientVoiceTimer=0;
+const ambientLines=['You, my love, what about ye?','Aye, you my love!','Some night for it!','Keep her lit!','How are ye doing, my love?','The city never sleeps.'];
+function ambientChatter(){
+ if(!voicesEnabled||!running||dialogueOpen||!('speechSynthesis' in window))return;
+ const now=Date.now();if(now-ambientVoiceTimer<9000)return;
+ if(Math.random()<.012){ambientVoiceTimer=now;speakLine(ambientLines[Math.floor(Math.random()*ambientLines.length)]);}
+}
+
+function speakLine(text){
+ if(!voicesEnabled||!('speechSynthesis' in window))return;
+ try{
+   speechSynthesis.cancel();
+   const u=new SpeechSynthesisUtterance(text);
+   u.rate=.92;u.pitch=.92;u.volume=.9;
+   speechSynthesis.speak(u);
+ }catch(e){}
+}
+
+
+/* V33 FICTIONAL DELIVERY MISSION SYSTEM */
+const deliveryJobs=[
+ {item:'SEALED PACKAGE',pickup:{x:820,y:1265,name:'COURIER'},drop:{x:1900,y:535,name:'CITY CONTACT'},reward:250},
+ {item:'IMPORTANT ENVELOPE',pickup:{x:2100,y:1820,name:'GARAGE CONTACT'},drop:{x:2800,y:520,name:'DOCK CONTACT'},reward:500},
+ {item:'SECURE CARGO',pickup:{x:1250,y:2050,name:'SOUTH CONTACT'},drop:{x:3180,y:1200,name:'EASTSIDE CONTACT'},reward:850}
+];
+function startDelivery(){
+ const job=deliveryJobs[Math.min(missionIndex,deliveryJobs.length-1)];
+ deliveryActive=true;deliveryStage=0;deliveryItem=job.item;
+ document.getElementById('deliveryHud').style.display='block';
+ document.getElementById('deliveryTitle').textContent='DELIVERY JOB: '+job.item;
+ document.getElementById('deliveryText').textContent='Go to '+job.pickup.name+' to collect it';
+ showMessage('NEW DELIVERY JOB',1800);
+}
+function updateDelivery(){
+ if(!deliveryActive)return;
+ const job=deliveryJobs[Math.min(missionIndex,deliveryJobs.length-1)];
+ const target=deliveryStage===0?job.pickup:job.drop;
+ const d=Math.hypot(player.x-target.x,player.y-target.y);
+ if(d<70){
+   if(deliveryStage===0){
+     deliveryStage=1;
+     document.getElementById('deliveryText').textContent='Package collected. Deliver to '+job.drop.name;
+     showMessage('PACKAGE COLLECTED',1600);
+   }else{
+     deliveryActive=false;
+     player.money+=job.reward;
+     document.getElementById('deliveryText').textContent='Delivery complete +£'+job.reward;
+     showMessage('DELIVERY COMPLETE +£'+job.reward,2200);
+     setTimeout(()=>document.getElementById('deliveryHud').style.display='none',2500);
+   }
+ }
+}
+
+function startDialogue(npc){interactionSound();
+ if(!npc)return;
+ dialogueOpen=true;
+ const roleLines=npcVoiceLines[npc.role]||npcVoiceLines[npc.name]||npcVoiceLines['Street NPC']||['Keep moving.'];
+ const line=roleLines[Math.floor(Math.random()*roleLines.length)];
+ dialogueQueue=[
+  [npc.name||npc.role||'CONTACT',line],
+  ['RILEY','Understood. I am moving to the next location.']
+ ];
+ showNextDialogue();
+}
+function showNextDialogue(){
+ const box=document.getElementById('dialogueBox');
+ if(!dialogueQueue.length){dialogueOpen=false;box.style.display='none';return;}
+ const d=dialogueQueue.shift();document.getElementById('speaker').textContent=d[0];document.getElementById('dialogueText').textContent=d[1];speakLine(d[1]);box.style.display='block';
+}
+function nearestMissionNPC(){
+ let best=null,bd=90;
+ missionNPCs.forEach(n=>{let d=Math.hypot(player.x-n.x,player.y-n.y);if(d<bd){bd=d;best=n;}});
+ return best;
+}
+function updateCitySystems(){if(musicOn&&Math.random()<.0008)sirenSound();
+ let chosen=districts.reduce((a,b)=>Math.hypot(player.x-a.x,player.y-a.y)<Math.hypot(player.x-b.x,player.y-b.y)?a:b);
+ if(chosen&&chosen.name!==lastDistrict){lastDistrict=chosen.name;const el=document.getElementById('districtName');if(el)el.textContent=chosen.name;}
+ const total=Math.floor((dayTime*24+6)%24*60);const h=Math.floor(total/60).toString().padStart(2,'0'),m=(total%60).toString().padStart(2,'0');
+ const c=document.getElementById('clock');if(c)c.textContent=h+':'+m;
+}
+function fireArcade(){interactionSound();
+ if(dialogueOpen){showNextDialogue();return;}
+ const nearby=nearestMissionNPC();if(nearby){startDialogue(nearby);return;}
+ if(!running||inside)return;
+ if(!deliveryActive&&Math.random()<0.15)startDelivery();
+ let a=player.dir||0;
+ if(inVehicle)a=Math.atan2(player.vy||0.01,player.vx||0.01)||a;
+ projectiles.push({x:player.x+Math.cos(a)*18,y:player.y+Math.sin(a)*18,vx:Math.cos(a)*11,vy:Math.sin(a)*11,life:55});
+ showMessage('ACTION EFFECT',500);
+}
+
+function showMessage(message,ms=1500){
+ const m=document.getElementById('msg');
+ m.textContent=message;m.style.opacity=1;
+ clearTimeout(window.__msgTimer);
+ window.__msgTimer=setTimeout(()=>m.style.opacity=0,ms);
+}
+
+function update(){
+ if(!running)return;
+ dayTime=(dayTime+0.00012)%1; updateCitySystems(); v25Tick(); updateImprovedDriving(); updateV50Vehicle(); updateV51CityLife(); updateV52World(); updateV53Progression(); updateV54Economy(); updateV55Social(); updateV56Activities(); updateV57Buildings(); updateV59Belfast(); updateV60World(); updateVehiclePhysics(); updateTraffic(); updateSmartTraffic(); updateWeatherV48(); updateV49Gameplay(); drawMiniMap(); updateDelivery(); updateGPS(); updateCityEvents();
+ projectiles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;});
+ for(let i=projectiles.length-1;i>=0;i--)if(projectiles[i].life<=0)projectiles.splice(i,1);
+ let dx=(keys['ArrowRight']||keys.d?1:0)-(keys['ArrowLeft']||keys.a?1:0),dy=(keys['ArrowDown']||keys.s?1:0)-(keys['ArrowUp']||keys.w?1:0);
+ if(touch.on){dx=touch.x;dy=touch.y}
+ let len=Math.hypot(dx,dy);if(len){dx/=len;dy/=len}
+ const sprint=(keys.Shift||keys.shift||document.getElementById('action').dataset.down==='1')&&player.stamina>2;
+ let sp=sprint?6.0:3.65;if(sprint)player.stamina-=.5;else player.stamina=Math.min(100,player.stamina+.24);
+ if(inVehicle){engineSound(Math.hypot(inVehicle.vx||0,inVehicle.vy||0)+4);
+   let oldX=inVehicle.x,oldY=inVehicle.y;
+   inVehicle.x=Math.max(25,Math.min(world.w-25,inVehicle.x+dx*sp*1.55));
+   inVehicle.y=Math.max(25,Math.min(world.h-25,inVehicle.y+dy*sp*1.55));
+   if((inVehicle.x===25||inVehicle.x===world.w-25||inVehicle.y===25||inVehicle.y===world.h-25)&&Math.hypot(dx,dy)>0) inVehicle.damage=Math.min(100,inVehicle.damage+1.2);
+   player.x=inVehicle.x;player.y=inVehicle.y;
+   cars.forEach(q=>{if(q!==inVehicle&&Math.hypot(q.x-inVehicle.x,q.y-inVehicle.y)<42){inVehicle.damage=Math.min(100,inVehicle.damage+.45);q.damage=Math.min(100,q.damage+.25)}})
+   let cond=Math.max(0,100-Math.round(inVehicle.damage));document.getElementById('carStatus').style.display='block';document.getElementById('carStatus').textContent='VEHICLE CONDITION: '+cond+'%';
+ }else{if(Math.abs(dx)+Math.abs(dy)>0)footstepSound();document.getElementById('carStatus').style.display='none';
+   player.x=Math.max(25,Math.min(world.w-25,player.x+dx*sp));player.y=Math.max(25,Math.min(world.h-25,player.y+dy*sp));
+ }
+ if(len){player.dir=Math.atan2(dy,dx);player.walk+=sprint?.45:.25}
+ let currentMission=missions[missionIndex];
+ document.querySelector('.mission-title').textContent='★ '+currentMission.name;
+ document.getElementById('missionDesc').innerHTML=currentMission.desc+' <b>• £'+currentMission.reward+'</b>';
+ const briefEl=document.getElementById('missionBrief');if(briefEl)briefEl.textContent=currentMission.brief||'';
+ if(Math.hypot(player.x-currentMission.x,player.y-currentMission.y)<65&&!missionDone){
+   missionDone=true;player.money+=currentMission.reward;showMessage('MISSION COMPLETE: '+currentMission.name+' +£'+currentMission.reward,2600);
+   
+   setTimeout(()=>{missionIndex=(missionIndex+1)%missions.length;missionDone=false},2600);
+ }
+ document.getElementById('money').textContent='£'+player.money;
+ document.getElementById('health').style.width=player.health+'%';document.getElementById('stamina').style.width=player.stamina+'%';
+ const locs=[['WEST BELFAST',700,1250],['CITY CENTRE',1700,900],['SOUTH BELFAST',1650,2150],['TITANIC QUARTER',2850,520],['EAST BELFAST',2800,1500]];
+ let near=locs.reduce((best,q)=>Math.hypot(player.x-q[1],player.y-q[2])<best[0]?[Math.hypot(player.x-q[1],player.y-q[2]),q[0]]:best,[1e9,'BELFAST']);
+ document.getElementById('location').textContent='LOCATION: '+near[1];
+ document.getElementById('districtBanner').textContent=near[1];
+ cars.forEach(q=>{if(!q.parked&&q!==inVehicle){q.x+=q.v;if(q.x>world.w+80)q.x=-80}});
+ police.forEach(q=>{let a=Math.atan2(player.y-q.y,player.x-q.x);q.x+=Math.cos(a)*q.v;q.y+=Math.sin(a)*q.v;q.phase+=.25});
+ peds.forEach(q=>{
+ if(q.down>0){
+   q.down--;
+   q.x+=q.hitX;q.y+=q.hitY;q.hitX*=.88;q.hitY*=.88;
+   if(q.down===0){q.dir=Math.random()*Math.PI*2;}
+ }else{
+   q.walk+=.12;q.x+=Math.cos(q.dir)*q.speed;q.y+=Math.sin(q.dir)*q.speed;
+   if(Math.random()<.01)q.dir+=(Math.random()-.5)*1.5;
+ }
+ if(inVehicle&&q.down<=0&&Math.hypot(q.x-inVehicle.x,q.y-inVehicle.y)<28){
+   let a=Math.atan2(q.y-inVehicle.y,q.x-inVehicle.x);
+   q.down=90;q.hitX=Math.cos(a)*3.2;q.hitY=Math.sin(a)*3.2;
+   inVehicle.damage=Math.min(100,inVehicle.damage+.35);
+   showMessage('PEDESTRIAN COLLISION — SLOW DOWN',1200);
+ }
+});
+ cam.x+=((player.x-W/2)-cam.x)*.08;cam.y+=((player.y-H/2)-cam.y)*.08;cam.x=Math.max(0,Math.min(Math.max(0,world.w-W),cam.x));cam.y=Math.max(0,Math.min(Math.max(0,world.h-H),cam.y));
+}
+function sx(a){return a-cam.x}function sy(a){return a-cam.y}
+function rect(x0,y0,w,h,col){x.fillStyle=col;x.fillRect(sx(x0),sy(y0),w,h)}
+function drawRoads(){
+ x.fillStyle='#15212b';x.fillRect(0,0,W,H);
+ roads.forEach(r=>{
+   rect(r.x-18,r.y-18,r.w+36,r.h+36,'#697078');
+   rect(r.x-10,r.y-10,r.w+20,r.h+20,'#1b2228');
+   rect(r.x,r.y,r.w,r.h,'#394149');
+   // subtle asphalt texture
+   x.save();x.globalAlpha=.12;x.fillStyle='#9ca4aa';
+   for(let yy=Math.max(r.y,cam.y);yy<Math.min(r.y+r.h,cam.y+H);yy+=28)
+     for(let xx=Math.max(r.x,cam.x);xx<Math.min(r.x+r.w,cam.x+W);xx+=38)
+       x.fillRect(sx(xx+(yy%17)),sy(yy),2,2);
+   x.restore();
+   x.save();x.strokeStyle='#e0b83f';x.lineWidth=3;x.setLineDash([18,15]);x.beginPath();
+   if(r.w>r.h){x.moveTo(sx(r.x),sy(r.y+r.h/2));x.lineTo(sx(r.x+r.w),sy(r.y+r.h/2))}
+   else{x.moveTo(sx(r.x+r.w/2),sy(r.y));x.lineTo(sx(r.x+r.w/2),sy(r.y+r.h))}
+   x.stroke();x.restore();
+ });
+}
+function building(b){
+ let X=sx(b.x),Y=sy(b.y),depth=Math.max(7,b.hgt*.42);
+ // deep shadow
+ x.fillStyle='rgba(0,0,0,.32)';x.fillRect(X+depth,Y+depth,b.w,b.h);
+ // side wall / depth
+ x.fillStyle=['#4b4d50','#57544f','#4b5158','#5c5148'][b.tone];
+ x.beginPath();x.moveTo(X+b.w,Y);x.lineTo(X+b.w+depth,Y-depth);x.lineTo(X+b.w+depth,Y+b.h-depth);x.lineTo(X+b.w,Y+b.h);x.fill();
+ // main facade
+ let facade=['#8a8178','#777f85','#9a8879','#727a73'][b.tone];
+ x.fillStyle=facade;x.fillRect(X,Y,b.w,b.h);
+ // roof
+ x.fillStyle=['#55595d','#50575d','#665b55','#4e5651'][b.tone];
+ x.fillRect(X-depth*.18,Y-depth*.34,b.w+depth*.35,depth*.34);
+ x.strokeStyle='rgba(255,255,255,.12)';x.strokeRect(X,Y,b.w,b.h);
+ // brick courses
+ x.strokeStyle='rgba(45,38,33,.16)';x.lineWidth=1;
+ for(let yy=14;yy<b.h-6;yy+=12){x.beginPath();x.moveTo(X, Y+yy);x.lineTo(X+b.w,Y+yy);x.stroke()}
+ // windows with frames and glow
+ for(let yy=13;yy<b.h-18;yy+=24)for(let xx=11;xx<b.w-13;xx+=23){
+   let lit=((Math.floor(xx/23)+Math.floor(yy/24)+b.tone*2)%4===0);
+   x.fillStyle=lit?'#e7c66e':'#263945';x.fillRect(X+xx,Y+yy,11,13);
+   x.strokeStyle='#c1b8aa';x.lineWidth=1;x.strokeRect(X+xx-.5,Y+yy-.5,12,14);
+   x.strokeStyle='rgba(0,0,0,.38)';x.beginPath();x.moveTo(X+xx+5.5,Y+yy);x.lineTo(X+xx+5.5,Y+yy+13);x.stroke();
+ }
+ // entrance door
+ let dw=Math.min(24,b.w*.22);x.fillStyle='#263039';x.fillRect(X+b.w/2-dw/2,Y+b.h-22,dw,22);
+ x.fillStyle='#d7c069';x.beginPath();x.arc(X+b.w/2+dw/2-5,Y+b.h-11,1.6,0,Math.PI*2);x.fill();
+ // shopfront on some buildings
+ if(b.tone===2&&b.w>150){x.fillStyle='#26313a';x.fillRect(X+8,Y+b.h-32,b.w-16,20);x.fillStyle='#e8ded0';x.fillRect(X+12,Y+b.h-29,b.w-24,4);x.fillStyle='#6f9cc0';x.font='bold 8px Arial';x.textAlign='center';x.fillText('CITY STORES',X+b.w/2,Y+b.h-17);x.textAlign='start'}
+ // chimneys / rooftop details
+ x.fillStyle='#5a5049';x.fillRect(X+b.w*.18,Y-depth*.8,10,depth*.55);x.fillRect(X+b.w*.72,Y-depth*.7,9,depth*.45);
+ // drain pipe
+ x.strokeStyle='#45484a';x.lineWidth=3;x.beginPath();x.moveTo(X+5,Y+4);x.lineTo(X+5,Y+b.h);x.stroke();
+}
+function drawLamp(l){
+ let X=sx(l.x),Y=sy(l.y);if(X<-30||X>W+30||Y<-60||Y>H+30)return;
+ x.fillStyle='#202a31';x.fillRect(X-2,Y-35,4,35);x.fillStyle='#d8e8f3';x.beginPath();x.arc(X,Y-38,5,0,Math.PI*2);x.fill();
+ let g=x.createRadialGradient(X,Y-38,1,X,Y-38,40);g.addColorStop(0,'#ffd88955');g.addColorStop(1,'#ffd88900');x.fillStyle=g;x.beginPath();x.arc(X,Y-38,40,0,Math.PI*2);x.fill();
+}
+function drawCar(q,isPolice=false){
+ let X=sx(q.x),Y=sy(q.y),ang=isPolice?Math.atan2(player.y-q.y,player.x-q.x):0;
+ x.save();x.translate(X,Y);x.rotate(ang);
+ x.fillStyle='#0007';x.fillRect(-24,7,55,11);
+ x.fillStyle=isPolice?'#f3f5f4':q.col;x.fillRect(-24,-12,50,24);
+ x.fillStyle='rgba(255,255,255,.18)';x.fillRect(-20,-10,35,3);
+ x.fillStyle='#1b2c38';x.fillRect(-12,-9,26,18);
+ x.fillStyle='rgba(145,205,235,.32)';x.fillRect(-9,-7,19,5);
+ x.fillStyle='#111';x.fillRect(-18,-15,11,5);x.fillRect(10,-15,11,5);x.fillRect(-18,10,11,5);x.fillRect(10,10,11,5);
+ x.fillStyle='#e6f4ff';x.fillRect(18,-8,5,5);x.fillRect(18,3,5,5);
+ if(typeof dayTime!=='undefined' && Math.max(0,Math.cos((dayTime-.5)*Math.PI*2))>.35){
+   x.fillStyle='rgba(255,239,180,.22)';x.beginPath();x.moveTo(24,-7);x.lineTo(62,-18);x.lineTo(62,18);x.lineTo(24,7);x.fill();
+ }
+ if(q.damage>18){
+   x.fillStyle='rgba(30,30,30,'+Math.min(.65,q.damage/120)+')';
+   x.fillRect(-23,-11,10,6);x.fillRect(7,5,15,5);
+ }
+ if(q.damage>45){
+   x.strokeStyle='rgba(0,0,0,.75)';x.lineWidth=1.5;x.beginPath();x.moveTo(-8,-8);x.lineTo(0,-1);x.lineTo(7,-8);x.moveTo(2,7);x.lineTo(12,1);x.stroke();
+ }
+ if(q.damage>70){
+   x.fillStyle='rgba(80,80,80,.35)';x.beginPath();x.arc(4,-18,12,0,Math.PI*2);x.fill();
+ }
+ if(isPolice){x.fillStyle='#1765a8';x.fillRect(-24,-12,14,24);x.fillStyle='#e9eef3';x.fillRect(-5,-14,18,3);x.fillStyle=Math.sin(q.phase*6)>0?'#ff3152':'#2a9fff';x.fillRect(-2,-17,12,4)}
+ x.restore();
+}
+function drawPerson(p,hero=false){
+ let X=sx(p.x),Y=sy(p.y),sc=hero?1.35:1,step=Math.sin(p.walk||0)*3;
+ x.save();x.translate(X,Y);
+ if(!hero&&(p.down||0)>0)x.rotate(Math.PI/2);
+ x.scale(sc,sc);
+ x.fillStyle='#0008';x.beginPath();x.ellipse(0,12,10,4,0,0,Math.PI*2);x.fill();
+ x.fillStyle=hero?'#213b58':'#52697b';x.fillRect(-6,-4,12,15);
+ x.strokeStyle=hero?'#132238':'#27333c';x.lineWidth=4;x.beginPath();x.moveTo(-3,10);x.lineTo(-4+step,19);x.moveTo(3,10);x.lineTo(4-step,19);x.stroke();
+ x.strokeStyle='#cbd8e1';x.lineWidth=3;x.beginPath();x.moveTo(-6,0);x.lineTo(-10,-2-step*.3);x.moveTo(6,0);x.lineTo(10,2+step*.3);x.stroke();
+ x.fillStyle=hero?'#f0b994':'#d39b7d';x.beginPath();x.arc(0,-10,7,0,Math.PI*2);x.fill();
+ x.fillStyle=hero?'#33241f':'#31231d';x.beginPath();x.arc(0,-12,7,Math.PI,Math.PI*2);x.fill();
+ if(hero){x.strokeStyle='#5dc1ff';x.lineWidth=2;x.beginPath();x.arc(0,1,17,0,Math.PI*2);x.stroke()}
+ x.restore();
+}
+function drawV34Lighting(){
+ const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(18,35,55,.10)');g.addColorStop(.65,'rgba(255,180,90,.025)');g.addColorStop(1,'rgba(5,10,20,.16)');
+ x.fillStyle=g;x.fillRect(0,0,W,H);
+}
+function drawWeather(){rainAmbience();
+ const cycle=Math.floor((dayTime*24+6)%24);
+ const mode=cycle<6?'NIGHT RAIN':cycle<10?'MORNING MIST':cycle<18?'CLEAR SKIES':'CITY RAIN';
+ const badge=document.getElementById('weatherBadge');if(badge)badge.textContent=mode;
+ if(mode==='MORNING MIST'){
+   x.fillStyle='rgba(190,210,220,.09)';x.fillRect(0,0,W,H);
+   for(let i=0;i<5;i++){x.fillStyle='rgba(220,235,240,.035)';x.beginPath();x.arc((i*223+cam.x*.05)%W,H*.2+i*70,120,0,Math.PI*2);x.fill()}
+ } else if(mode==='CLEAR SKIES'){
+   x.fillStyle='rgba(255,205,120,.035)';x.fillRect(0,0,W,H);
+ } else {
+   x.fillStyle='rgba(20,45,62,.12)';x.fillRect(0,0,W,H);
+   x.strokeStyle='rgba(180,220,255,.20)';x.lineWidth=1;
+   rain.forEach(r=>{r.x-=2;r.y+=r.s;if(r.y>H){r.y=-20;r.x=Math.random()*W}x.beginPath();x.moveTo(r.x,r.y);x.lineTo(r.x-3,r.y+r.l);x.stroke()})
+ }
+}
+
+
+
+
+
+/* V60 MASSIVE MILESTONE EDITION & HANDLING */
+let vehicleHealth=100, skidTimer=0;
+function updateVehiclePhysics(){
+ const sp=Math.hypot(driveVX,driveVY);
+ const kmh=Math.min(180,Math.round(sp*18));
+ const el=document.getElementById('speedValue'); if(el)el.textContent=kmh;
+
+ // traction: sharper grip at low speed, mild slide at high speed
+ const highSpeed=Math.min(1,sp/6.8);
+ if(!driveKeys.a&&!driveKeys.arrowleft&&!driveKeys.d&&!driveKeys.arrowright){
+   driveVX*=.995;driveVY*=.995;
+ }
+ // handbrake drift effect
+ if(driveKeys[' '] && sp>2.2){
+   skidTimer=10;
+   driveVX*=.985;driveVY*=.985;
+ }
+ if(skidTimer>0)skidTimer--;
+
+ // small bounce-free collision boundaries
+ const oldX=player.x,oldY=player.y;
+ if(player.x<=41||player.x>=3499||player.y<=41||player.y>=2499){
+   vehicleHealth=Math.max(0,vehicleHealth-2);
+   driveVX*=-.35;driveVY*=-.35;
+ }
+}
+function drawVehicleEffects(){
+ const X=sx(player.x),Y=sy(player.y);
+ const sp=Math.hypot(driveVX,driveVY);
+ if(skidTimer>0&&sp>1){
+   x.save();x.strokeStyle='rgba(30,30,30,.5)';x.lineWidth=2;
+   x.beginPath();x.moveTo(X-12,Y+10);x.lineTo(X-26,Y+22);x.moveTo(X+12,Y+10);x.lineTo(X+26,Y+22);x.stroke();x.restore();
+ }
+}
+
+/* V44 IMPROVED CAR CONTROLS */
+let driveVX=0,driveVY=0,driveFacing=0;
+const driveKeys={};
+addEventListener('keydown',e=>{driveKeys[e.key.toLowerCase()]=true; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+addEventListener('keyup',e=>{driveKeys[e.key.toLowerCase()]=false;});
+
+function updateImprovedDriving(){
+ if(typeof player==='undefined')return;
+ const up=driveKeys.w||driveKeys.arrowup;
+ const down=driveKeys.s||driveKeys.arrowdown;
+ const left=driveKeys.a||driveKeys.arrowleft;
+ const right=driveKeys.d||driveKeys.arrowright;
+ const hand=driveKeys[' '];
+ let ax=0,ay=0;
+ if(up) ay-=0.55;
+ if(down) ay+=0.42;
+ if(left) ax-=0.55;
+ if(right) ax+=0.55;
+
+ // acceleration and steering response
+ driveVX+=ax; driveVY+=ay;
+ const maxSpeed=hand?3.2:6.8;
+ const speed=Math.hypot(driveVX,driveVY);
+ if(speed>maxSpeed){driveVX*=maxSpeed/speed;driveVY*=maxSpeed/speed;}
+
+ // smooth friction
+ const friction=hand?.72:.88;
+ if(!up&&!down)driveVY*=friction;
+ if(!left&&!right)driveVX*=friction;
+ if(hand){driveVX*=.78;driveVY*=.78;}
+
+ // stop tiny drifting
+ if(Math.abs(driveVX)<.04)driveVX=0;
+ if(Math.abs(driveVY)<.04)driveVY=0;
+
+ player.x+=driveVX;player.y+=driveVY;
+ if(Math.abs(driveVX)+Math.abs(driveVY)>.1)driveFacing=Math.atan2(driveVY,driveVX);
+
+ // keep within map bounds
+ player.x=Math.max(40,Math.min(3500,player.x));
+ player.y=Math.max(40,Math.min(2500,player.y));
+}
+
+/* V42 CITY EVENTS, RACES & TAXI JOBS */
+let cityEvent=null,eventStep=0,eventReward=0;
+const raceCheckpoints=[
+ {x:900,y:1450,name:'START'}, {x:1450,y:1080,name:'CITY CENTRE'},
+ {x:2050,y:720,name:'CATHEDRAL QUARTER'}, {x:2500,y:1200,name:'EASTSIDE'},
+ {x:1880,y:1540,name:'FINISH'}
+];
+const taxiStops=[
+ {x:700,y:1540,name:'Falls Road pickup'}, {x:1450,y:1080,name:'City Hall drop-off'},
+ {x:2100,y:1820,name:'Market passenger'}, {x:3000,y:1200,name:'East Belfast drop-off'}
+];
+function startRaceEvent(){
+ cityEvent='race';eventStep=0;eventReward=1000;
+ document.getElementById('eventStatus').textContent='Street Circuit: reach checkpoint 1';
+ showMissionPopup('CITY EVENT: STREET CIRCUIT','Follow the checkpoints across Belfast.');
+}
+function startTaxiEvent(){
+ cityEvent='taxi';eventStep=0;eventReward=600;
+ document.getElementById('eventStatus').textContent='Taxi Job: head to pickup';
+ showMissionPopup('TAXI JOB STARTED','Collect passengers and complete the route.');
+}
+function updateCityEvents(){
+ if(!cityEvent)return;
+ const list=cityEvent==='race'?raceCheckpoints:taxiStops;
+ const t=list[eventStep]; if(!t)return;
+ const d=Math.hypot(player.x-t.x,player.y-t.y);
+ document.getElementById('eventStatus').textContent=(cityEvent==='race'?'Circuit: ':'Taxi: ')+t.name+' • '+Math.round(d)+'m';
+ if(d<75){
+   eventStep++;
+   if(eventStep>=list.length){
+     player.money+=eventReward; if(typeof addXP==='function')addXP(80); if(typeof addReputation==='function')addReputation(2);
+     showMissionPopup(cityEvent==='race'?'RACE COMPLETE':'TAXI JOB COMPLETE','+£'+eventReward);
+     document.getElementById('eventStatus').textContent='Event complete! Explore for more.';
+     cityEvent=null;
+   } else showMissionPopup('CHECKPOINT',list[eventStep].name,1000);
+ }
+}
+function drawCityEventMarker(){
+ if(!cityEvent)return;
+ const list=cityEvent==='race'?raceCheckpoints:taxiStops,t=list[eventStep];if(!t)return;
+ const X=sx(t.x),Y=sy(t.y);if(X<-80||X>W+80||Y<-80||Y>H+80)return;
+ x.save();x.strokeStyle=cityEvent==='race'?'#ff9d45':'#74e0a0';x.lineWidth=4;
+ x.beginPath();x.arc(X,Y,30+Math.sin(Date.now()/150)*5,0,Math.PI*2);x.stroke();
+ x.font='bold 10px Arial';x.fillStyle='#fff';x.textAlign='center';x.fillText(t.name,X,Y-42);x.textAlign='start';x.restore();
+}
+
+/* V41 GPS, MISSION MARKERS & CINEMATIC SYSTEM */
+let gpsMission=-1,gpsStartDistance=1;
+function showMissionPopup(title,text,ms=2600){
+ const box=document.getElementById('missionPopup');
+ document.getElementById('mpTitle').textContent=title;
+ document.getElementById('mpText').textContent=text;
+ box.style.display='block';setTimeout(()=>box.style.display='none',ms);
+}
+function startMissionV41(i){
+ if(!missions[i])return;
+ gpsMission=i;missionIndex=i;
+ const m=missions[i];gpsStartDistance=Math.max(1,Math.hypot(player.x-m.x,player.y-m.y));
+ showMissionPopup('MISSION START: '+m.name,m.brief||m.desc);
+ if(typeof speakLine==='function')speakLine('New mission. '+m.name+'. '+m.desc);
+}
+function updateGPS(){
+ const target=gpsMission>=0?missions[gpsMission]:missions[missionIndex];
+ const name=document.getElementById('gpsTarget'),distEl=document.getElementById('gpsDistance'),fill=document.getElementById('gpsFill');
+ if(!target){name.textContent='No active target';distEl.textContent='';fill.style.width='0%';return;}
+ const d=Math.hypot(player.x-target.x,player.y-target.y);
+ name.textContent=target.name+' • '+Math.round(d)+'m';
+ distEl.textContent=d<90?'ARRIVED AT DESTINATION':'Follow the route marker';
+ fill.style.width=Math.max(0,Math.min(100,100-(d/gpsStartDistance*100)))+'%';
+ if(d<70&&gpsMission>=0){
+   player.money+=(target.reward||0); if(typeof addXP==='function')addXP(120); if(typeof addReputation==='function')addReputation(3);
+   showMissionPopup('MISSION COMPLETE','+£'+(target.reward||0)+' • '+target.name,2200);
+   gpsMission=-1;missionIndex=Math.min(missionIndex+1,missions.length-1);
+ }
+}
+function drawGPSMarker(){
+ if(gpsMission<0||!missions[gpsMission])return;
+ const m=missions[gpsMission],X=sx(m.x),Y=sy(m.y);
+ if(X<-100||X>W+100||Y<-100||Y>H+100)return;
+ x.save();x.strokeStyle='#78d5ff';x.lineWidth=3;x.beginPath();x.arc(X,Y,24+Math.sin(Date.now()/180)*5,0,Math.PI*2);x.stroke();
+ x.fillStyle='#ffd36e';x.beginPath();x.moveTo(X,Y-34);x.lineTo(X-9,Y-14);x.lineTo(X+9,Y-14);x.closePath();x.fill();x.restore();
+}
+
+/* V32 FICTIONAL UNDERGROUND STORY SYSTEM */
+const factions=['INDEPENDENT','CITY CREW','DOCKLAND CREW','NORTHSIDE CREW'];
+let streetRespect=0;
+function v32StoryTick(){
+ const completed=Math.min(missionIndex,missions.length);
+ streetRespect=completed*120;
+ const rep=document.getElementById('streetRep'),crew=document.getElementById('crewName');
+ if(rep)rep.textContent=streetRespect;
+ if(crew)crew.textContent=factions[Math.min(3,Math.floor(completed/2))];
+}
+
+/* V25 live systems */
+let v25xp=0,v25rep=0,v25lastMission=-1,v25radioTimer=0;
+const v25Stations=['BELFAST FM • NIGHT DRIVE','CITY BEATS • LIVE','NORTH COAST RADIO • ELECTRIC','DOCKLANDS FM • AFTER DARK','ULSTER WAVE • CITY MIX'];
+function v25Tick(){ambientChatter();v32StoryTick();
+ const completed=Math.min(missionIndex,missions.length);
+ if(completed!==v25lastMission){v25lastMission=completed;v25xp=completed*250;v25rep=completed*75;}
+ if(running&&Math.random()<.015){v25xp+=1;}
+ const rank=v25xp>=1600?'CITY LEGEND':v25xp>=900?'VETERAN':v25xp>=400?'OPERATOR':'ROOKIE';
+ const xp=document.getElementById('xp'),rep=document.getElementById('rep'),rn=document.getElementById('rankName');
+ if(xp)xp.textContent=v25xp;if(rep)rep.textContent=v25rep;if(rn)rn.textContent=rank;
+ if(Date.now()-v25radioTimer>7000){
+   v25radioTimer=Date.now();
+   const r=document.getElementById('radioStation');if(r)r.textContent=v25Stations[Math.floor(Math.random()*v25Stations.length)];
+ }
+}
+
+
+
+/* ================= V27 PROCEDURAL SOUND EFFECTS =================
+   All effects are generated in-browser: engine, siren, footsteps,
+   rain and interaction sounds. No copyrighted recordings required.
+================================================================== */
+let sfxCtx=null,sfxMaster=null,lastEngineTone=0,lastFootstep=0,lastRainSound=0;
+function initSFX(){
+ if(sfxCtx)return;
+ const AC=window.AudioContext||window.webkitAudioContext;
+ sfxCtx=new AC();sfxMaster=sfxCtx.createGain();sfxMaster.gain.value=.10;sfxMaster.connect(sfxCtx.destination);
+}
+function sfxTone(freq,dur=.08,type='sine',vol=.05,slide=0){
+ if(!sfxCtx||!sfxMaster)return;
+ const o=sfxCtx.createOscillator(),g=sfxCtx.createGain(),t=sfxCtx.currentTime;
+ o.type=type;o.frequency.setValueAtTime(Math.max(20,freq),t);
+ if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,freq+slide),t+dur);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ o.connect(g);g.connect(sfxMaster);o.start(t);o.stop(t+dur+.02);
+}
+function v27InitAudio(){initSFX();initMusic();if(sfxCtx.state==='suspended')sfxCtx.resume();}
+function engineSound(speed=0){
+ if(!musicOn)return;
+ const now=performance.now();if(now-lastEngineTone<110)return;lastEngineTone=now;
+ const f=48+Math.min(110,Math.abs(speed)*5);
+ sfxTone(f,.09,'sawtooth',.022,f*.18);
+}
+function footstepSound(){
+ if(!musicOn)return;
+ const now=performance.now();if(now-lastFootstep<180)return;lastFootstep=now;
+ sfxTone(115,.045,'triangle',.018,-25);
+}
+function interactionSound(){if(musicOn){sfxTone(440,.06,'sine',.035,80);setTimeout(()=>sfxTone(660,.08,'sine',.028,60),70)}}
+function sirenSound(){
+ if(!musicOn||!sfxCtx)return;
+ const t=sfxCtx.currentTime;
+ sfxTone(720,.18,'square',.012,-180);
+ setTimeout(()=>sfxTone(520,.18,'square',.012,220),180);
+}
+function rainAmbience(){
+ if(!musicOn)return;
+ const now=performance.now();if(now-lastRainSound<1500)return;lastRainSound=now;
+ sfxTone(170,.25,'triangle',.008,-80);
+}
+
+/* ================= V26 ORIGINAL CITY SOUNDTRACK =================
+   Procedural Web Audio music: no copyrighted audio file required.
+   Starts only after player interaction, so it works on mobile browsers.
+================================================================= */
+let musicCtx=null,musicMaster=null,musicTimer=null,musicOn=false,musicStep=0;
+const musicProgressions=[
+  [55.00,65.41,73.42,82.41],     // A minor style
+  [49.00,58.27,65.41,73.42],
+  [61.74,73.42,82.41,98.00]
+];
+const bassLine=[55,55,65.41,73.42,49,49,58.27,65.41,61.74,61.74,55,49];
+const leadScale=[220,261.63,293.66,329.63,392,440,493.88,523.25];
+
+function initMusic(){
+  if(musicCtx) return;
+  const AC=window.AudioContext||window.webkitAudioContext;
+  musicCtx=new AC();
+  musicMaster=musicCtx.createGain();
+  musicMaster.gain.value=.16;
+  const filter=musicCtx.createBiquadFilter();
+  filter.type='lowpass'; filter.frequency.value=1800; filter.Q.value=.7;
+  musicMaster.connect(filter);filter.connect(musicCtx.destination);
+}
+function tone(freq,when,dur,type='sine',vol=.08){
+  if(!musicCtx||!musicMaster) return;
+  const o=musicCtx.createOscillator(),g=musicCtx.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,when);
+  g.gain.setValueAtTime(.0001,when);
+  g.gain.exponentialRampToValueAtTime(Math.max(.0001,vol),when+.025);
+  g.gain.exponentialRampToValueAtTime(.0001,when+dur);
+  o.connect(g);g.connect(musicMaster);o.start(when);o.stop(when+dur+.03);
+}
+function beat(){
+  if(!musicOn||!musicCtx) return;
+  const now=musicCtx.currentTime+.02;
+  const step=musicStep%16;
+  const chord=musicProgressions[Math.floor(musicStep/16)%musicProgressions.length];
+
+  // Deep electronic bass
+  const bass=bassLine[musicStep%bassLine.length];
+  tone(bass,now,.30,'triangle',.13);
+  if(step%4===0) tone(bass/2,now,.48,'sine',.10);
+
+  // Atmospheric chord every 4 beats
+  if(step%4===0){
+    const root=chord[Math.floor(step/4)%chord.length];
+    tone(root*2,now,.62,'sine',.045);
+    tone(root*2.5,now+.02,.55,'sine',.026);
+    tone(root*3,now+.04,.48,'sine',.020);
+  }
+
+  // Percussion
+  if(step%2===0) tone(90,now,.08,'square',.028);
+  if(step===4||step===12) tone(180,now,.05,'square',.020);
+
+  // Random Belfast-night lead phrase
+  if(step%4===2 && Math.random()>.30){
+    const note=leadScale[Math.floor(Math.random()*leadScale.length)];
+    tone(note,now,.18,'sine',.035);
+  }
+
+  musicStep++;
+}
+function startMusic(){
+  v27InitAudio();
+  if(musicCtx.state==='suspended') musicCtx.resume();
+  musicOn=true;
+  if(musicTimer) clearInterval(musicTimer);
+  beat(); musicTimer=setInterval(beat,187.5); // 128 BPM
+  const b=document.getElementById('musicBtn');
+  if(b){b.textContent='♫ MUSIC: ON';b.classList.add('on');}
+}
+function stopMusic(){
+  musicOn=false;
+  if(musicTimer){clearInterval(musicTimer);musicTimer=null;}
+  const b=document.getElementById('musicBtn');
+  if(b){b.textContent='♫ MUSIC: OFF';b.classList.remove('on');}
+}
+function toggleMusic(){musicOn?stopMusic():startMusic();}
+
+function render(){
+ try{update();}catch(err){
+   const msg=document.getElementById('msg');
+   if(msg){msg.textContent='RECOVERING GAME...';msg.style.opacity=1;setTimeout(()=>msg.style.opacity=0,1000);}
+ }
+ x.clearRect(0,0,W,H);
+ drawV34City();
+ let bg=x.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#1b2d3a');bg.addColorStop(1,'#0e1820');x.fillStyle=bg;x.fillRect(0,0,W,H);
+ drawRoads();
+ // grass/parks
+ x.fillStyle='#234434';x.fillRect(sx(350),sy(2200),500,260);x.fillStyle='#1d3b2d';x.fillRect(sx(3050),sy(170),360,480);
+
+ // detailed residential houses and shopfronts
+ const homes=[[330,1770],[510,1780],[690,1770],[2470,2200],[2660,2200],[2850,2200],[3100,900]];
+ homes.forEach((h,i)=>{let X=sx(h[0]),Y=sy(h[1]);if(X>-100&&X<W+100&&Y>-100&&Y<H+100){
+   x.fillStyle='rgba(0,0,0,.3)';x.fillRect(X+7,Y+7,78,62);
+   x.fillStyle=['#9b8170','#7f8a8b','#a18b79'][i%3];x.fillRect(X,Y,78,60);
+   x.fillStyle='#4b4543';x.beginPath();x.moveTo(X-5,Y);x.lineTo(X+39,Y-25);x.lineTo(X+83,Y);x.fill();
+   x.fillStyle='#d5b56c';x.fillRect(X+12,Y+20,13,14);x.fillRect(X+52,Y+20,13,14);
+   x.fillStyle='#47392f';x.fillRect(X+33,Y+37,14,23);
+ }});
+ // interactive shops and gameplay locations
+ const locations=[
+  {x:1040,y:670,n:'CONVENIENCE SHOP',type:'shop'},
+  {x:2100,y:1820,n:'GARAGE',type:'garage'},
+  {x:3100,y:1830,n:'CITY CAFE',type:'cafe'},
+  {x:760,y:2080,n:'SAFE HOUSE',type:'safe'}
+ ];
+ locations.forEach(z=>{let X=sx(z.x),Y=sy(z.y);if(X>-100&&X<W+100&&Y>-60&&Y<H+60){
+   x.fillStyle='rgba(0,0,0,.45)';x.fillRect(X-55,Y-20,110,26);
+   x.fillStyle=z.type==='garage'?'#e9b84c':z.type==='safe'?'#65d7a2':'#78b8e8';
+   x.font='bold 10px Arial';x.textAlign='center';x.fillText(z.n,X,Y-5);x.textAlign='start';
+   x.strokeStyle='rgba(255,255,255,.35)';x.strokeRect(X-58,Y-23,116,30);
+ }});
+ // distinctive Belfast-style landmarks
+ let specials=[
+  {x:1180,y:690,w:260,h:150,hgt:48,tone:2},
+  {x:1930,y:280,w:310,h:180,hgt:60,tone:1},
+  {x:2900,y:390,w:420,h:160,hgt:40,tone:0},
+  {x:650,y:2110,w:300,h:190,hgt:45,tone:3}
+ ];
+ specials.forEach(building);
+ blocks.sort((a,b)=>a.y-b.y).forEach(building);
+ lamps.forEach(drawLamp);
+ cars.forEach(q=>drawCar(q));police.forEach(q=>drawCar(q,true));
+ peds.forEach(q=>drawPerson(q,false));missionNPCs.forEach(n=>{
+ let X=sx(n.x),Y=sy(n.y);
+ if(X>-60&&X<W+60&&Y>-80&&Y<H+80){
+   drawPerson({x:n.x,y:n.y,walk:0,down:0},false);
+   x.fillStyle='#7fd4ff';x.font='bold 9px Arial';x.textAlign='center';x.fillText(n.name,X,Y-28);x.textAlign='start';
+   x.fillStyle='rgba(127,212,255,.15)';x.beginPath();x.arc(X,Y,22,0,Math.PI*2);x.fill();
+ }
+});
+drawPerson(player,true);
+
+
+ // bridges and river channels
+ const riverX=sx(2350), riverY=sy(80);
+ x.fillStyle='#183b52';x.fillRect(riverX,riverY,115,Math.min(H+100,world.h-cam.y));
+ x.fillStyle='rgba(120,190,220,.18)';
+ for(let yy=riverY+10;yy<H;yy+=28)x.fillRect(riverX+10+(yy%17),yy,82,2);
+ x.fillStyle='#6e655a';x.fillRect(riverX-35,sy(480),185,44);
+ x.fillStyle='#5b5249';x.fillRect(riverX-35,sy(500),185,8);
+ // V25 landmarks
+ const v25Landmarks=[
+  ['BELFAST CITY HALL',1660,620],['TITANIC QUARTER',2860,410],
+  ['CATHEDRAL QUARTER',2150,760],['BOTANIC DISTRICT',1500,2200],
+  ['VICTORIA SQUARE',1950,900],['EASTSIDE',3100,1300]
+ ];
+ v25Landmarks.forEach(L=>{let X=sx(L[1]),Y=sy(L[2]);if(X>-140&&X<W+140&&Y>-50&&Y<H+50){
+   x.fillStyle='rgba(5,10,15,.48)';x.fillRect(X-62,Y-17,124,20);
+   x.strokeStyle='rgba(127,212,255,.32)';x.strokeRect(X-62,Y-17,124,20);
+   x.fillStyle='#d8efff';x.font='bold 8px Arial';x.textAlign='center';x.fillText(L[0],X,Y-4);x.textAlign='start';
+ }});
+
+ // V29 expanded Belfast street-name system
+ const v29Streets=[
+  ['FALLS ROAD',650,1280],['SHANKILL ROAD',540,760],['ANTRIM ROAD',1350,310],
+  ['ROYAL AVENUE',1680,720],['DONEGALL PLACE',1720,830],['GREAT VICTORIA STREET',1450,1020],
+  ['LISBURN ROAD',1250,1900],['ORMEAU ROAD',1750,1900],['NEWTOWNARDS ROAD',3000,1250],
+  ['ALBERTBRIDGE ROAD',2350,1450],['CRUMLIN ROAD',900,520],['CAVEHILL ROAD',1150,180],
+  ['SPRINGFIELD ROAD',520,1500],['ANDERSONSTOWN ROAD',300,1900],['BALLYMURPHY ROAD',250,1700],
+  ['DIVIS STREET',920,1100],['BOTANIC AVENUE',1450,2100],['UNIVERSITY ROAD',1600,2000],
+  ['ORANGEFIELD ROAD',2550,1600],['SYDENHAM ROAD',2800,850],['QUEENS ROAD',3000,520],
+  ['HIGH STREET',2050,850],['MAY STREET',1900,1050],['OXFORD STREET',2050,1150],
+  ['GROSVENOR ROAD',1050,1350],['TATES AVENUE',1100,1600],['BROADWAY',950,1500],
+  ['YORK STREET',1850,400],['NORTH QUEEN STREET',1500,420],['CASTLEREAGH ROAD',2450,1750],
+  ['RAVENHILL ROAD',2050,1850],['STRANMILLIS ROAD',1250,2250],['KENNEDY WAY',420,900],['GLEN ROAD',180,1950],['MONAGH LINK',650,850],['MONAGH ROAD',820,760],['DIVIS STREET',1050,1120],['WESTLINK',1150,700],['M1 LINK',980,1850],['BALLYGOMARTIN ROAD',420,600],['OLDPARK ROAD',1050,500],['CLIFTONVILLE ROAD',1250,380],['MALONE ROAD',1350,2050],['STRANMILLIS EMBANKMENT',1550,2300],['CROMAC STREET',1800,1350],['EAST BRIDGE STREET',2250,1000],['MONTGOMERY ROAD',2700,1450],['CONNSWATER ROAD',2900,1500],['UPPER NEWTOWNARDS ROAD',3250,1100]
+ ];
+ v29Streets.forEach(s=>{let X=sx(s[1]),Y=sy(s[2]);if(X>-130&&X<W+130&&Y>-30&&Y<H+30){
+   x.save();x.globalAlpha=.86;
+   x.fillStyle='rgba(7,12,18,.58)';x.fillRect(X-58,Y-12,116,17);
+   x.fillStyle='#e6f3ff';x.font='bold 7px Arial';x.textAlign='center';x.fillText(s[0],X,Y);x.textAlign='start';
+   x.restore();
+ }});
+
+
+
+
+ // V60 MASSIVE MILESTONE EDITION
+ function drawMonaghBypass(){
+   const pts=[[120,980],[360,900],[620,820],[900,760],[1180,700]];
+   x.save();
+   // dual carriageway
+   x.strokeStyle='#252b30';x.lineWidth=78;x.lineCap='round';x.beginPath();
+   pts.forEach((p,i)=>i?x.lineTo(sx(p[0]),sy(p[1])):x.moveTo(sx(p[0]),sy(p[1])));x.stroke();
+   x.strokeStyle='#4a535a';x.lineWidth=68;x.beginPath();
+   pts.forEach((p,i)=>i?x.lineTo(sx(p[0]),sy(p[1])):x.moveTo(sx(p[0]),sy(p[1])));x.stroke();
+   // centre divide
+   x.strokeStyle='#d8d0a5';x.lineWidth=2;x.setLineDash([13,11]);x.beginPath();
+   pts.forEach((p,i)=>i?x.lineTo(sx(p[0]),sy(p[1])):x.moveTo(sx(p[0]),sy(p[1])));x.stroke();x.setLineDash([]);
+   // road edges
+   x.strokeStyle='#1b2024';x.lineWidth=2;x.beginPath();
+   pts.forEach((p,i)=>i?x.lineTo(sx(p[0]),sy(p[1]-34)):x.moveTo(sx(p[0]),sy(p[1]-34)));x.stroke();
+   x.restore();
+
+   // Roundabout
+   const RX=sx(720),RY=sy(800);
+   if(RX>-120&&RX<W+120&&RY>-120&&RY<H+120){
+     x.fillStyle='#2e353a';x.beginPath();x.arc(RX,RY,58,0,Math.PI*2);x.fill();
+     x.fillStyle='#4a535a';x.beginPath();x.arc(RX,RY,42,0,Math.PI*2);x.fill();
+     x.fillStyle='#3c5638';x.beginPath();x.arc(RX,RY,25,0,Math.PI*2);x.fill();
+     x.fillStyle='#6b824d';x.beginPath();x.arc(RX,RY,11,0,Math.PI*2);x.fill();
+   }
+
+   // Road sign
+   const X=sx(470),Y=sy(850);
+   if(X>-100&&X<W+100&&Y>-80&&Y<H+80){
+     x.fillStyle='#295f9e';x.fillRect(X-52,Y-36,104,28);x.strokeStyle='#dbeeff';x.strokeRect(X-52,Y-36,104,28);
+     x.fillStyle='#fff';x.font='bold 8px Arial';x.textAlign='center';x.fillText('MONAGH BYPASS  →',X,Y-18);x.textAlign='start';
+     x.fillStyle='#777';x.fillRect(X-2,Y-8,4,35);
+   }
+   landmarkLabel('MONAGH BYPASS',620,710);
+ }
+
+
+ // V60 MASSIVE MILESTONE EDITION DETAIL
+ function drawStreetFurniture(){
+   const lamps=[[1450,900],[1600,850],[1750,830],[1950,920],[1250,1500],[980,1250],[2400,900],[2800,1100],[1450,1900]];
+   lamps.forEach(p=>{let X=sx(p[0]),Y=sy(p[1]);if(X>-30&&X<W+30&&Y>-80&&Y<H+30){
+     x.strokeStyle='#30353a';x.lineWidth=3;x.beginPath();x.moveTo(X,Y);x.lineTo(X,Y-38);x.stroke();
+     x.fillStyle='#ffe4a0';x.beginPath();x.arc(X,Y-40,5,0,Math.PI*2);x.fill();
+     x.fillStyle='rgba(255,210,120,.08)';x.beginPath();x.arc(X,Y-36,28,0,Math.PI*2);x.fill();
+   }});
+   const trees=[[1180,1500],[1300,1600],[1600,680],[1700,690],[900,1700],[2700,900],[2850,1000]];
+   trees.forEach(p=>{let X=sx(p[0]),Y=sy(p[1]);if(X>-40&&X<W+40&&Y>-60&&Y<H+40){
+     x.fillStyle='#503a25';x.fillRect(X-3,Y-20,6,22);x.fillStyle='#365b3d';
+     x.beginPath();x.arc(X,Y-30,15,0,Math.PI*2);x.fill();x.fillStyle='rgba(115,150,90,.5)';
+     x.beginPath();x.arc(X+7,Y-35,11,0,Math.PI*2);x.fill();
+   }});
+ }
+ function drawShopFront(name,wx,wy){
+   const X=sx(wx),Y=sy(wy);if(X<-80||X>W+80||Y<-40||Y>H+40)return;
+   x.fillStyle='#27211e';x.fillRect(X-45,Y-16,90,28);
+   x.fillStyle='#1b3342';x.fillRect(X-40,Y-12,80,17);
+   x.fillStyle='#ffd27a';x.font='bold 7px Arial';x.textAlign='center';x.fillText(name,X,Y-3);x.textAlign='start';
+ }
+ function drawV37CityDetail(){
+   drawStreetFurniture();
+   [
+ ['CASTLECOURT',1500,1000],['VICTORIA SQUARE',1640,980],['MATTHETTS MUSIC',1760,1030],
+ ['LUNN’S JEWELLERS',1880,980],['ST GEORGE’S MARKET',2100,1820],['GREGGS',1180,1280],
+ ['COFFEES & HEROES',1450,1750],['QUEEN’S ARCADE',1710,900],['SMITHFIELD MARKET',1380,760],
+ ['THE DUKE OF YORK',2140,690],['THE DIRTY ONION',2050,760],['THE CROWN',1450,1080],
+ // WEST BELFAST
+ ['KENNEDY CENTRE',620,1450],['THE PARK CENTRE',900,1120],['DAIRY FARM CENTRE',300,1900],
+ ['ARIZONA ESPRESSO',520,1750],['MASON’S COFFEE BAR',650,1680],['YUM',720,1600],
+ ['PIZZA GUYZ',700,1540],['BIDDYS BAR & BISTRO',760,1500],['BENGAL SPICE',790,1580],
+ ['SLUDGE SLAMMERS',920,1500],
+ // NORTH BELFAST
+ ['BEN MADIGAN’S',1180,420],['BELFAST CASTLE CAFÉ',1350,250],['CRUMLIN ROAD GAOL',950,600],
+ ['MCCONNELL’S DISTILLERY',1050,700],['YORKGATE',1450,520],
+ // SOUTH BELFAST
+ ['RYAN’S BAR',1300,1900],['VILLA ITALIA',1450,1780],['DOYEN',1100,2050],
+ ['BOTANIC INN',1580,1600],['THE POINT BAR',1700,1500],
+ // EAST BELFAST
+ ['CONNSWATER',2900,1450],['BULLHOUSE EAST',3100,1300],['BALLYHACKAMORE',3300,1100],
+ ['HOLYWOOD ROAD CAFÉ',3150,900],['NEWTOWNARDS LOCAL',3000,1200],
+ // EXTRA RETAIL DISTRICTS
+ ['FORESTSIDE',1650,2300],['BELMONT ROAD SHOPS',3350,850],['ORANGEFIELD LOCAL',2950,1750]
+].forEach(s=>drawShopFront(s[0],s[1],s[2]));
+ }
+
+ // V34 enhanced pseudo-3D building renderer
+ function draw3DBuilding(b){
+   const X=sx(b.x),Y=sy(b.y),bw=b.w,bd=b.h;
+   if(X+bw<-80||X-bw>W+80||Y+bd<-120||Y-bd>H+120)return;
+   const depth=Math.max(8,Math.min(28,Math.round((bw+bd)*.12)));
+   x.save();
+   // shadow
+   x.fillStyle='rgba(0,0,0,.22)';x.beginPath();
+   x.moveTo(X-depth,Y+bd+depth);x.lineTo(X+bw+depth,Y+bd+depth);x.lineTo(X+bw+depth*1.7,Y+bd+depth*1.8);x.lineTo(X+depth,Y+bd+depth*1.8);x.closePath();x.fill();
+   // right wall
+   x.fillStyle=b.side||'#4b5661';x.beginPath();x.moveTo(X+bw,Y);x.lineTo(X+bw+depth,Y-depth);x.lineTo(X+bw+depth,Y+bd-depth);x.lineTo(X+bw,Y+bd);x.closePath();x.fill();
+   // roof
+   x.fillStyle=b.roof||'#76828c';x.beginPath();x.moveTo(X,Y);x.lineTo(X+depth,Y-depth);x.lineTo(X+bw+depth,Y-depth);x.lineTo(X+bw,Y);x.closePath();x.fill();
+   // front wall
+   x.fillStyle=b.face||'#66727d';x.fillRect(X,Y,bw,bd);
+   // windows
+   const cols=Math.max(1,Math.floor(bw/18)),rows=Math.max(1,Math.floor(bd/22));
+   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+     const wx=X+5+c*(bw-10)/cols,wy=Y+6+r*(bd-10)/rows;
+     x.fillStyle=(r+c)%3===0?'#ffd78a':'#203849';x.fillRect(wx,wy,Math.max(4,bw/(cols*2.4)),Math.max(5,bd/(rows*2.8)));
+   }
+   x.strokeStyle='rgba(0,0,0,.35)';x.strokeRect(X,Y,bw,bd);
+   x.restore();
+ }
+ function drawV34City(){
+   drawWeatherV48(); drawV58GraphicsPass(); drawV58RoadTexture(); drawV58BuildingShadows(); drawV53Effects(); drawV49Graphics(); drawV43Atmosphere(); drawV43RoadDetail(); drawV43BuildingHighlights(); drawV37CityDetail();
+   drawV36Network();
+   drawMonaghBypass();
+   const city=[
+    {x:1540,y:540,w:90,h:100,face:'#77736c',side:'#4e4a46',roof:'#aaa18e'},
+    {x:1760,y:560,w:130,h:120,face:'#858075',side:'#514d48',roof:'#c3b69e'},
+    {x:1980,y:740,w:105,h:85,face:'#60717a',side:'#3d4a50',roof:'#8fa0a5'},
+    {x:2180,y:850,w:140,h:110,face:'#7b6d62',side:'#4e423a',roof:'#a9998b'},
+    {x:1350,y:980,w:120,h:150,face:'#666b70',side:'#42474b',roof:'#92989c'},
+    {x:950,y:1220,w:145,h:95,face:'#71665e',side:'#4a423c',roof:'#9b8d82'},
+    {x:2500,y:600,w:160,h:125,face:'#526b78',side:'#334852',roof:'#89a4b0'},
+    {x:2740,y:800,w:120,h:160,face:'#5e6970',side:'#39434a',roof:'#869199'},
+    {x:2980,y:1120,w:155,h:115,face:'#677078',side:'#414950',roof:'#929ca3'},
+    {x:1120,y:1850,w:140,h:125,face:'#746b62',side:'#4d4741',roof:'#a19689'},
+    {x:1550,y:2100,w:150,h:100,face:'#687078',side:'#42484e',roof:'#90999f'},
+    {x:2050,y:1700,w:130,h:145,face:'#69615a',side:'#453f39',roof:'#958b80'},
+    {x:1180,y:720,w:70,h:95,face:'#8a4f3f',side:'#55342c',roof:'#a96d5d'},
+    {x:1280,y:760,w:85,h:115,face:'#7a4036',side:'#4a2c28',roof:'#9a6255'},
+    {x:1420,y:820,w:65,h:90,face:'#8d7664',side:'#574d44',roof:'#b29b85'},
+    {x:1660,y:980,w:75,h:130,face:'#944c3e',side:'#5a3029',roof:'#b56a58'},
+    {x:1840,y:1020,w:95,h:110,face:'#5d6870',side:'#3a444a',roof:'#87949a'},
+    {x:2040,y:920,w:75,h:140,face:'#6d5b50',side:'#473c35',roof:'#998578'},
+    {x:2460,y:1180,w:105,h:125,face:'#6a7378',side:'#41494d',roof:'#969ea1'},
+    {x:2650,y:1320,w:90,h:115,face:'#8a6250',side:'#563e33',roof:'#ad8871'},
+    {x:2860,y:1500,w:120,h:145,face:'#5b6870',side:'#38434a',roof:'#839099'},
+    {x:760,y:1450,w:95,h:100,face:'#86594c',side:'#543930',roof:'#a97b6c'}
+   ];
+   city.forEach(draw3DBuilding);
+ }
+
+ // V30 iconic Belfast landmarks
+ function landmarkLabel(name,wx,wy){
+   const X=sx(wx),Y=sy(wy);if(X<-140||X>W+140||Y<-80||Y>H+80)return;
+   x.fillStyle='rgba(8,13,18,.72)';x.fillRect(X-62,Y-18,124,18);
+   x.strokeStyle='rgba(255,210,100,.42)';x.strokeRect(X-62,Y-18,124,18);
+   x.fillStyle='#ffe4a0';x.font='bold 8px Arial';x.textAlign='center';x.fillText(name,X,Y-6);x.textAlign='start';
+ }
+ [[2920,360,'SAMSON H&W CRANE'],[3070,390,'GOLIATH H&W CRANE']].forEach(c=>{
+   const X=sx(c[0]),Y=sy(c[1]);
+   if(X>-120&&X<W+120&&Y>-180&&Y<H+100){
+     x.save();x.strokeStyle='#d8b642';x.lineWidth=6;
+     x.beginPath();x.moveTo(X-20,Y+90);x.lineTo(X-5,Y-120);x.lineTo(X+18,Y+90);x.stroke();
+     x.lineWidth=4;x.beginPath();x.moveTo(X-5,Y-80);x.lineTo(X+70,Y-80);x.lineTo(X+70,Y+20);x.stroke();
+     x.fillStyle='#d8b642';x.fillRect(X-35,Y+88,70,9);x.restore();landmarkLabel(c[2],c[0],c[1]+110);
+   }
+ });
+ {const X=sx(1880),Y=sy(700);if(X>-80&&X<W+80&&Y>-170&&Y<H+80){
+   x.save();x.fillStyle='#b7a58e';x.fillRect(X-10,Y-120,20,120);x.fillStyle='#d8ccb8';
+   x.beginPath();x.moveTo(X-18,Y-120);x.lineTo(X,Y-155);x.lineTo(X+18,Y-120);x.fill();
+   x.fillStyle='#f3eee1';x.beginPath();x.arc(X,Y-98,11,0,Math.PI*2);x.fill();
+   x.strokeStyle='#333';x.lineWidth=1;x.beginPath();x.arc(X,Y-98,11,0,Math.PI*2);x.stroke();x.restore();
+   landmarkLabel('ALBERT MEMORIAL CLOCK',1880,730);
+ }}
+ {const X=sx(2080),Y=560;if(X>-90&&X<W+90&&Y>-90&&Y<H+90){
+   x.save();x.translate(X,Y);x.fillStyle='#6fa8ba';x.beginPath();x.ellipse(0,0,38,15,0,0,Math.PI*2);x.fill();
+   x.fillStyle='#d4e4e8';x.beginPath();x.moveTo(30,0);x.lineTo(48,-10);x.lineTo(42,4);x.lineTo(48,12);x.closePath();x.fill();
+   x.fillStyle='#17313b';x.beginPath();x.arc(-12,-4,3,0,Math.PI*2);x.fill();x.restore();landmarkLabel('THE BIG FISH',2080,600);
+ }}
+ // Belfast City Hall
+ {const X=sx(1660),Y=620;if(X>-150&&X<W+150&&Y>-150&&Y<H+100){
+   x.fillStyle='#d2c9b8';x.fillRect(X-70,Y-35,140,60);x.fillStyle='#e7dfd0';
+   for(let i=-50;i<=50;i+=25)x.fillRect(X+i,Y-55,14,80);
+   x.beginPath();x.arc(X,Y-55,28,Math.PI,0);x.fill();landmarkLabel('BELFAST CITY HALL',1660,650);
+ }}
+ // Pub signs and nightlife locations
+ const pubs=[
+  ['THE CROWN LIQUOR SALOON',1450,1080],['KELLYS CELLARS',1750,760],
+  ['THE DIRTY ONION',2050,720],['THE DUKE OF YORK',2140,690],
+  ['LAVERY’S',1320,1840],['THE MORNING STAR',1940,900],
+  ['MADDENS BAR',1840,820],['THE MERCHANT',2200,620],
+  ['SLUDGE SLAMMERS',920,1500]
+ ];
+ pubs.forEach(p=>{let X=sx(p[1]),Y=sy(p[2]);if(X>-110&&X<W+110&&Y>-50&&Y<H+50){
+   x.fillStyle='#351f17';x.fillRect(X-48,Y-14,96,22);x.strokeStyle='#e0a84f';x.strokeRect(X-48,Y-14,96,22);
+   x.fillStyle='#ffd37b';x.font='bold 7px Arial';x.textAlign='center';x.fillText(p[0],X,Y+1);x.textAlign='start';
+ }});
+
+ // road names
+ const roadNames=[
+  {n:'Falls Road',x:800,y:1265,a:0},{n:'Shankill Road',x:450,y:780,a:-Math.PI/2},
+  {n:'Antrim Road',x:1665,y:300,a:-Math.PI/2},{n:'Crumlin Road',x:1665,y:820,a:-Math.PI/2},
+  {n:'Springfield Road',x:1040,y:1940,a:0},{n:'Lisburn Road',x:1665,y:2250,a:-Math.PI/2},
+  {n:'Ormeau Road',x:2700,y:1940,a:0},{n:'Newtownards Road',x:2700,y:1250,a:-Math.PI/2},
+  {n:'Royal Avenue',x:1900,y:535,a:0},{n:'Donegall Place',x:1450,y:535,a:0},
+  {n:'Great Victoria Street',x:900,y:535,a:0},{n:'High Street',x:2300,y:535,a:0},
+  {n:'Albertbridge Road',x:2800,y:1260,a:0},{n:'Ravenhill Road',x:2350,y:1940,a:0},
+  {n:'Malone Road',x:1400,y:2180,a:-Math.PI/2},{n:"Queen's Road",x:2800,y:520,a:0},
+  {n:'Titanic Boulevard',x:3020,y:520,a:0}
+ ];
+ roadNames.forEach(r=>{let X=sx(r.x),Y=sy(r.y);if(X>-250&&X<W+250&&Y>-100&&Y<H+100){x.save();x.translate(X,Y);x.rotate(r.a);x.font='bold 17px Arial';x.textAlign='center';x.fillStyle='rgba(0,0,0,.48)';x.fillText(r.n,2,2);x.fillStyle='rgba(235,241,244,.72)';x.fillText(r.n,0,0);x.restore()}});
+
+ // objective beacon
+ let activeMarker=missions[missionIndex]||missions[0];let ox=sx(activeMarker.x),oy=sy(activeMarker.y);let grad=x.createRadialGradient(ox,oy,4,ox,oy,65);grad.addColorStop(0,'#ffd84c99');grad.addColorStop(1,'#ffd84c00');x.fillStyle=grad;x.beginPath();x.arc(ox,oy,65,0,Math.PI*2);x.fill();x.fillStyle='#ffd34f';x.beginPath();x.moveTo(ox,oy-25);x.lineTo(ox+10,oy-5);x.lineTo(ox,oy+15);x.lineTo(ox-10,oy-5);x.fill();
+ 
+
+ // traffic lights and Belfast-style street signs
+ const lights=[[920,1230],[1710,1230],[1710,1940],[2680,1940],[2680,530],[900,530]];
+ lights.forEach((q,i)=>{let X=sx(q[0]),Y=sy(q[1]);if(X>-40&&X<W+40&&Y>-60&&Y<H+60){
+   x.fillStyle='#24282b';x.fillRect(X-2,Y-30,4,30);x.fillRect(X-8,Y-34,16,14);
+   x.fillStyle=(i%3===0)?'#e44b42':'#3a3a3a';x.beginPath();x.arc(X,Y-30,3,0,Math.PI*2);x.fill();
+   x.fillStyle=(i%3===1)?'#e8b948':'#3a3a3a';x.beginPath();x.arc(X,Y-25,3,0,Math.PI*2);x.fill();
+   x.fillStyle=(i%3===2)?'#4dbd67':'#3a3a3a';x.beginPath();x.arc(X,Y-20,3,0,Math.PI*2);x.fill();
+ }});
+ const signs=[['CITY CENTRE',1710,980],['FALLS ROAD',780,1260],['TITANIC QUARTER',2780,690],['ORMEAU',1800,1940]];
+ signs.forEach(s=>{let X=sx(s[1]),Y=sy(s[2]);if(X>-100&&X<W+100&&Y>-40&&Y<H+40){
+   x.fillStyle='#184c7b';x.fillRect(X-40,Y-22,80,16);x.strokeStyle='#dbeeff';x.lineWidth=1;x.strokeRect(X-40,Y-22,80,16);
+   x.fillStyle='#fff';x.font='bold 7px Arial';x.textAlign='center';x.fillText(s[0],X,Y-11);x.textAlign='start';
+ }});
+ // trees and street furniture
+ const trees=[[280,300],[370,350],[520,2380],[780,2350],[980,2260],[3150,210],[3300,300],[3050,2050],[3200,2150],[1100,150]];
+ trees.forEach(q=>{let X=sx(q[0]),Y=sy(q[1]);x.fillStyle='rgba(0,0,0,.22)';x.beginPath();x.ellipse(X+6,Y+12,16,7,0,0,Math.PI*2);x.fill();x.fillStyle='#5d4938';x.fillRect(X-3,Y-2,6,18);x.fillStyle='#315f3c';x.beginPath();x.arc(X,Y-12,18,0,Math.PI*2);x.fill();x.fillStyle='#467b4b';x.beginPath();x.arc(X-7,Y-20,12,0,Math.PI*2);x.fill();x.beginPath();x.arc(X+9,Y-20,12,0,Math.PI*2);x.fill()});
+ // bus stops
+ [[900,1160],[2100,1160],[1350,1940],[2850,1940]].forEach(q=>{let X=sx(q[0]),Y=sy(q[1]);x.fillStyle='#26343e';x.fillRect(X-14,Y-26,28,26);x.fillStyle='#8fb8d0';x.fillRect(X-11,Y-22,22,16);x.fillStyle='#d8e8f3';x.fillRect(X-14,Y-29,28,3);});
+ // day/night lighting cycle
+ let night=Math.max(0,Math.cos((dayTime-.5)*Math.PI*2));
+ if(night>.05){x.fillStyle='rgba(5,14,34,'+(night*.52)+')';x.fillRect(0,0,W,H);
+   // moon glow
+   let moon=x.createRadialGradient(W*.78,H*.18,3,W*.78,H*.18,90);moon.addColorStop(0,'rgba(220,230,255,.18)');moon.addColorStop(1,'rgba(220,230,255,0)');x.fillStyle=moon;x.beginPath();x.arc(W*.78,H*.18,90,0,Math.PI*2);x.fill();
+ }
+ projectiles.forEach(p=>{let X=sx(p.x),Y=sy(p.y);x.save();x.translate(X,Y);x.fillStyle='#ffd35a';x.shadowColor='#ff9b38';x.shadowBlur=12;x.beginPath();x.arc(0,0,4,0,Math.PI*2);x.fill();x.restore();});
+districts.forEach(d=>{let X=sx(d.x),Y=sy(d.y);if(X>-100&&X<W+100&&Y>-100&&Y<H+100){x.save();x.globalAlpha=.18;x.strokeStyle='#75c8ff';x.setLineDash([4,8]);x.beginPath();x.arc(X,Y,Math.min(d.r*zoom,.55*Math.max(W,H)),0,Math.PI*2);x.stroke();x.restore();}});
+drawV34Lighting(); drawWeather(); drawGPSMarker(); drawCityEventMarker(); drawVehicleEffects(); drawV58VehicleDetail(); drawVehicleGlow(); drawV50Character(); drawV55CharacterStyle(); drawV51CityLife(); drawV60CityDetail(); drawV52WorldDetail(); drawV54PropertyMarkers(); drawV56Activities(); drawV57Buildings(); drawV59Belfast(); drawV60World(); drawTrafficVehicles(); drawTrafficLights(); drawPedestrians();
+ // wet-road reflections
+ x.save();x.globalAlpha=.08;
+ x.fillStyle='#86b9d4';
+ for(let i=0;i<18;i++){let rx=(i*197-cam.x*0.35)%W;if(rx<0)rx+=W;let ry=(i*113-cam.y*0.25)%H;if(ry<0)ry+=H;x.fillRect(rx,ry,60,2)}
+ x.restore();
+ drawMini();
+ requestAnimationFrame(render);
+}
+function drawMini(){
+ mx.clearRect(0,0,166,166);mx.fillStyle='#0d1922';mx.fillRect(0,0,166,166);mx.save();mx.scale(166/world.w,166/world.h);
+ mx.strokeStyle='#53616b';mx.lineWidth=5;roads.forEach(r=>mx.strokeRect(r.x,r.y,r.w,r.h));
+ mx.fillStyle='#788692';blocks.forEach(b=>mx.fillRect(b.x,b.y,b.w,b.h));
+ mx.fillStyle='#ffd34f';mx.fillRect(2780,520,35,35);mx.fillStyle='#4da9ff';mx.beginPath();mx.arc(player.x,player.y,38,0,Math.PI*2);mx.fill();mx.restore();
+}
+addEventListener('keydown',e=>keys[e.key]=true);addEventListener('keyup',e=>keys[e.key]=false);
+const pad=document.getElementById('pad'),knob=document.getElementById('knob');
+function moveTouch(e){let t=e.touches?e.touches[0]:e;let r=pad.getBoundingClientRect(),dx=(t.clientX-(r.left+r.width/2))/(r.width/2),dy=(t.clientY-(r.top+r.height/2))/(r.height/2),l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}touch={x:dx,y:dy,on:true};knob.style.left=(42+dx*35)+'px';knob.style.top=(42+dy*35)+'px'}
+pad.addEventListener('touchstart',moveTouch,{passive:true});pad.addEventListener('touchmove',moveTouch,{passive:true});pad.addEventListener('touchend',()=>{touch.on=false;knob.style.left='42px';knob.style.top='42px'});
+const act=document.getElementById('action');['touchstart','mousedown'].forEach(ev=>act.addEventListener(ev,e=>{act.dataset.down='1';e.preventDefault()}));['touchend','mouseup','mouseleave'].forEach(ev=>act.addEventListener(ev,()=>act.dataset.down='0'));
+function enterBuilding(){
+ let near=null,d=85;
+ locations.forEach(z=>{let dd=Math.hypot(z.x-player.x,z.y-player.y);if(dd<d){d=dd;near=z}});
+ if(!near)return false;
+ inside=true;
+ document.getElementById('roomTitle').textContent=near.n;
+ let decor=document.getElementById('roomDecor'), action=document.getElementById('roomAction');
+ decor.innerHTML=''; action.innerHTML='';
+ let info='',button='',handler=()=>{};
+ if(near.type==='shop'){
+   info='Browse supplies. Purchase a city map upgrade for £50.';
+   button='BUY CITY MAP (£50)';
+   handler=()=>{if(player.money>=50){player.money-=50;document.getElementById('money').textContent='£'+player.money;document.getElementById('interiorInfo').textContent='City map purchased! New locations are easier to find.'}else document.getElementById('interiorInfo').textContent='Not enough money.'};
+ } else if(near.type==='garage'){
+   info='Vehicle service and storage area.';
+   decor.innerHTML='<div class="carLift"></div>';
+   button='SERVICE VEHICLE (£75)';
+   handler=()=>{if(player.money>=75){player.money-=75;player.health=100;if(inVehicle)inVehicle.damage=0;document.getElementById('money').textContent='£'+player.money;document.getElementById('interiorInfo').textContent='Vehicle repaired and player restored.'}else document.getElementById('interiorInfo').textContent='Not enough money.'};
+ } else if(near.type==='cafe'){
+   info='Take a break in the city cafe.';
+   decor.innerHTML='<div class="coffee"></div>';
+   button='BUY COFFEE (£10)';
+   handler=()=>{if(player.money>=10){player.money-=10;player.stamina=100;document.getElementById('money').textContent='£'+player.money;document.getElementById('interiorInfo').textContent='Stamina fully restored.'}else document.getElementById('interiorInfo').textContent='Not enough money.'};
+ } else {
+   info='Your safe house. Rest and save your progress.';
+   decor.innerHTML='<div class="sofa"></div><div class="bed"></div>';
+   button='REST & SAVE';
+   handler=()=>{player.health=100;player.stamina=100;localStorage.setItem('belfastV17Save',JSON.stringify({money:player.money,x:player.x,y:player.y}));document.getElementById('interiorInfo').textContent='Game saved locally on this device.'};
+ }
+ document.getElementById('interiorInfo').textContent=info;
+ action.innerHTML='<button class="roomBtn">'+button+'</button>';
+ action.querySelector('button').onclick=handler;
+ document.getElementById('interior').style.display='flex';
+ return true;
+}
+function toggleVehicle(){
+ if(inside)return;
+ if(enterBuilding())return;
+ if(inVehicle){engineSound(Math.hypot(inVehicle.vx||0,inVehicle.vy||0)+4);inVehicle=null;let m=document.getElementById('msg');m.textContent='LEFT VEHICLE';m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1500);return}
+ let near=null,dist=70;cars.forEach(q=>{let d=Math.hypot(q.x-player.x,q.y-player.y);if(d<dist){dist=d;near=q}});
+ if(near){inVehicle=near;let m=document.getElementById('msg');m.textContent='VEHICLE ENTERED';m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1500)}
+ else {let m=document.getElementById('msg');m.textContent='MOVE NEAR A VEHICLE OR BUILDING';m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1200)}
+}
+document.getElementById('exitRoom').onclick=()=>{inside=false;document.getElementById('interior').style.display='none';};
+addEventListener('keydown',e=>{if(e.key.toLowerCase()==='e')toggleVehicle();if(e.key===' '){e.preventDefault();fireArcade()}});
+let lastAct=0;
+act.addEventListener('click',()=>{let now=Date.now();if(now-lastAct<260){toggleVehicle();lastAct=0}else{fireArcade();lastAct=now}});
+(()=>{
+ const playBtn=document.getElementById('play');
+ const launchGame=(e)=>{
+   if(e){e.preventDefault();e.stopPropagation();}
+   document.body.classList.add('gameStarted');
+   document.getElementById('start').style.display='none';
+   running=true;
+   let m=document.getElementById('msg');
+   if(m){m.style.opacity=1;setTimeout(()=>m.style.opacity=0,2800);}
+   try{resize();}catch(err){}
+ };
+ if(playBtn){
+   playBtn.onclick=launchGame;
+   playBtn.addEventListener('touchend',launchGame,{passive:false});
+   playBtn.addEventListener('pointerup',launchGame);
+ }
+})();
+render();
+</script>
+<div style='position:fixed;left:8px;bottom:4px;font:8px Arial;color:#ffffff66;z-index:99'>Map-inspired game layout • Open geographic reference data attribution required for production use</div></body></html>
