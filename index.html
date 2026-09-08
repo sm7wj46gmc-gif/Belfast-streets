@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Belfast Streets V5</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#071019;font-family:Arial,Helvetica,sans-serif;touch-action:none}
+canvas{display:block;width:100vw;height:100vh}
+#ui{position:fixed;inset:0;color:#fff;pointer-events:none;text-shadow:0 2px 4px #000}
+#head{position:absolute;top:calc(env(safe-area-inset-top) + 10px);left:15px;right:15px;display:flex;justify-content:space-between}
+#title{font-weight:900;font-size:25px;letter-spacing:2px}.small{font-size:11px;color:#b7cad7;margin-top:4px}.right{text-align:right;font-weight:900;font-size:20px}
+#mission{margin-top:8px;font-size:13px;max-width:65vw}
+#joy{pointer-events:auto;position:absolute;left:22px;bottom:calc(env(safe-area-inset-bottom) + 35px);width:138px;height:138px;border-radius:50%;border:2px solid #c2d0d888;background:#10212b66}
+#knob{position:absolute;left:40px;top:40px;width:58px;height:58px;border-radius:50%;background:#d9e6ec99}
+#buttons{pointer-events:auto;position:absolute;right:18px;bottom:calc(env(safe-area-inset-bottom) + 32px);display:grid;gap:10px}
+button{width:132px;height:54px;border-radius:17px;border:2px solid #dbe6eb;background:#152432dd;color:#fff;font-weight:900;font-size:14px}
+#toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);background:#08131ddd;border:1px solid #61798b;border-radius:14px;padding:14px 18px;font-weight:800;display:none;text-align:center}
+#shop{position:absolute;inset:0;background:#061018eF;display:none;pointer-events:auto;padding:25px;overflow:auto}
+.card{max-width:500px;margin:auto;background:#142432;border:1px solid #527086;border-radius:20px;padding:20px}.card h2{margin-top:0}.buy{width:100%;margin:6px 0}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="ui"><div id="head"><div><div id="title">BELFAST STREETS <span style="font-size:13px;color:#79d1ff">V7.2</span></div><div class="small">NEW LOCATIONS UPDATE</div><div id="mission">MISSION: Find City Hall</div></div><div class="right">£<span id="cash">500</span><br><span id="stars">☆☆☆☆☆</span></div></div>
+<div id="joy"><div id="knob"></div></div><div id="buttons"><button id="action">ENTER CAR</button><button id="wanted">WANTED +</button><button id="shops">SHOPS</button><button id="graphics">HD MODE</button><button id="map">CITY MAP</button></div><div id="toast"></div>
+<div id="pub" style="position:absolute;inset:0;background:#090b10f2;display:none;pointer-events:auto;padding:18px;overflow:auto">
+<div class="card" style="max-width:700px;margin:10px auto">
+<button onclick="closePub()" style="float:right;width:85px">CLOSE</button>
+<h2>🍺 SLUDGE SLAMMERS</h2>
+<img src="assets/sludge-slammers.png" style="width:100%;border-radius:12px;border:2px solid #704a28;max-height:420px;object-fit:cover">
+<p>A fictional city pub where you can pick up missions and earn rewards.</p>
+<button onclick="pubMission()">TALK TO BARMAN</button>
+</div></div>
+<div id="flats" style="position:absolute;inset:0;background:#10121bf2;display:none;pointer-events:auto;padding:18px;overflow:auto">
+<div class="card" style="max-width:700px;margin:10px auto">
+<button onclick="closeFlats()" style="float:right;width:85px">CLOSE</button>
+<h2>🏢 DIVAS FLATS</h2>
+<div style="height:260px;border-radius:12px;background:linear-gradient(135deg,#626a78,#252a34);padding:22px;display:flex;align-items:end;justify-content:center;border:2px solid #8792a0">
+<div style="width:70%;height:85%;background:#3d4652;border:4px solid #202630;box-shadow:20px 12px 0 #181d25;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px">
+<span></span><span></span><span></span><span></span><span></span>
+<span></span><span></span><span></span><span></span><span></span>
+<span></span><span></span><span></span><span></span><span></span>
+<span></span><span></span><span></span><span></span><span></span>
+</div></div>
+<h3>Divas Flats</h3>
+<p>A fictional residential tower-block area added to Belfast Streets.</p>
+<button onclick="flatsMission()">EXPLORE THE FLATS</button>
+</div></div>
+<div id="citymap" style="position:absolute;inset:0;background:#061018ef;display:none;pointer-events:auto;padding:25px;overflow:auto">
+<div class="card"><button onclick="closeMap()" style="float:right;width:80px">CLOSE</button><h2>🗺 Belfast Streets V7 Map</h2>
+<p><b>West Belfast</b> • <b>North Belfast</b> • <b>City Centre</b> • <b>South Belfast</b> • <b>East Belfast</b> • <b>Titanic Quarter</b> • <b>Docklands</b></p>
+<p>New locations: Belfast Park, Riverside Park, Eastside Park, Harbour Bridge, City Bridge, City Shop, Garage and Safehouse.</p>
+<p>Tap CLOSE and explore them in the world.</p></div></div>
+<div id="shop"><div class="card"><button onclick="closeShop()" style="float:right;width:80px">CLOSE</button><h2>City Shops</h2><p>Spend money earned from missions.</p><button class="buy" onclick="buy('New Outfit',150)">NEW OUTFIT — £150</button><button class="buy" onclick="buy('Vehicle Upgrade',300)">VEHICLE UPGRADE — £300</button><button class="buy" onclick="buy('Safehouse',500)">SAFEHOUSE — £500</button><p id="owned"></p></div></div>
+</div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');let W,H,DPR;
+function rs(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*DPR;c.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0)}addEventListener('resize',rs);rs();
+const world={w:4600,h:3600},p={x:2250,y:1700,a:0,inCar:false,car:null},cam={x:0,y:0},joy={x:0,y:0};
+let cash=+(localStorage.bs5cash||500),wanted=0,mi=0,upgrade=+(localStorage.bs5up||0),hd=true;
+const roads=[[0,1700,4600,1700],[0,2050,4600,2050],[650,0,650,3600],[1550,0,1550,3600],[2450,0,2450,3600],[3400,0,3400,3600],[0,650,4600,650],[0,2850,4600,2850],[0,1100,4600,2500]];
+const blocks=[];for(let i=0;i<380;i++){let w=50+Math.random()*150,h=55+Math.random()*160,bx=Math.random()*(world.w-w),by=Math.random()*(world.h-h);if(Math.min(...roads.map(r=>Math.abs((r[0]==r[2]?bx-r[0]:by-r[1]))))<100)continue;blocks.push({x:bx,y:by,w,h})}
+const cars=[];for(let i=0;i<65;i++){let hor=i%2===0;cars.push({x:hor?Math.random()*world.w:[650,1550,2450,3400][i%4],y:hor?[650,1100,1700,2050,2500,2850][i%6]:Math.random()*world.h,hor,v:(Math.random()>.5?1:-1)*(1.2+Math.random()*2),col:['#d64d42','#f1f1ef','#2c78d4','#c9a52b','#303b45','#7b4ca1'][i%6]})}
+const cops=[{x:300,y:1700},{x:3000,y:2050},{x:2450,y:500},{x:4000,y:2800}];
+const peds=Array.from({length:85},()=>({x:Math.random()*world.w,y:Math.random()*world.h,dx:(Math.random()-.5)*.8,dy:(Math.random()-.5)*.8}));
+const roadblocks=[
+ {x:950,y:1700,n:'CHECKPOINT'},{x:1550,y:2350,n:'ROADBLOCK'},
+ {x:2900,y:2050,n:'CHECKPOINT'},{x:3400,y:1100,n:'ROADBLOCK'},
+ {x:700,y:850,n:'CHECKPOINT'},{x:2450,y:2850,n:'ROADBLOCK'}
+];
+const patrols=Array.from({length:14},(_,i)=>({
+ x:400+Math.random()*3700,y:400+Math.random()*2600,
+ dx:(Math.random()-.5)*.8,dy:(Math.random()-.5)*.8,
+ faction:i%2?'LOCAL PATROL':'CHECKPOINT GUARD'
+}));
+const parks=[
+ {x:300,y:300,w:420,h:300,n:'BELFAST PARK'},
+ {x:2700,y:300,w:420,h:260,n:'RIVERSIDE PARK'},
+ {x:3000,y:2700,w:500,h:350,n:'EASTSIDE PARK'}
+];
+const bridges=[
+ {x:3520,y:900,w:280,h:90,n:'HARBOUR BRIDGE'},
+ {x:3520,y:1900,w:280,h:90,n:'CITY BRIDGE'}
+];
+const shopsWorld=[
+ {x:1250,y:1500,n:'CITY SHOP'},
+ {x:2700,y:2100,n:'GARAGE'},
+ {x:2100,y:2900,n:'SAFEHOUSE'},
+ {x:1850,y:2350,n:'SLUDGE SLAMMERS'},
+ {x:820,y:2450,n:'DIVAS FLATS'}
+];
+const landmarks=[
+ {n:'CITY HALL',x:2250,y:1400,w:250,h:160,col:'#d7c8a6'},
+ {n:'TITANIC BELFAST',x:3900,y:700,w:300,h:220,col:'#8799a3'},
+ {n:'CAVE HILL',x:1100,y:250,w:650,h:280,col:'#315b37'},
+ {n:'UNIVERSITY',x:1900,y:2700,w:320,h:180,col:'#8d5746'},
+ {n:'HARLAND & WOLFF',x:4100,y:1200,w:160,h:350,col:'#d2b735'}
+];
+const missions=[{x:2250,y:1400,t:'MISSION 1 COMPLETE: CITY HALL',reward:250},{x:3900,y:700,t:'MISSION 2 COMPLETE: TITANIC QUARTER',reward:400},{x:1900,y:2700,t:'MISSION 3 COMPLETE: UNIVERSITY RUN',reward:550},{x:1100,y:250,t:'MISSION 4 COMPLETE: CAVE HILL',reward:700}];
+
+function r(o){return[o.x-cam.x,o.y-cam.y]}function T(){return p.inCar?p.car:p}
+function drawCar(v,police=false){let[sx,sy]=r(v);x.save();x.translate(sx,sy);x.rotate(v.hor===false?Math.PI/2:0);x.fillStyle=police?'#19344c':v.col;x.fillRect(-18,-10,36,20);x.fillStyle='#9cc8df';x.fillRect(-8,-7,16,14);if(police){x.fillStyle=Date.now()%350<175?'#e33':'#2588ff';x.fillRect(-9,-14,18,5)}x.restore()}
+function draw(){
+ let day=.62+.38*Math.sin(Date.now()/22000);x.fillStyle=`rgb(${18+35*day},${40+55*day},${32+42*day})`;x.fillRect(0,0,W,H);
+ x.fillStyle='#163d50';x.fillRect(world.w-350-cam.x,-cam.y,1000,H+1000);
+ x.strokeStyle='#32383e';x.lineWidth=84;x.lineCap='round';roads.forEach(a=>{x.beginPath();x.moveTo(a[0]-cam.x,a[1]-cam.y);x.lineTo(a[2]-cam.x,a[3]-cam.y);x.stroke()});
+ x.strokeStyle='rgba(255,255,255,.13)';x.lineWidth=4;roads.forEach(a=>{x.beginPath();x.moveTo(a[0]-cam.x,a[1]-cam.y-28);x.lineTo(a[2]-cam.x,a[3]-cam.y-28);x.stroke()});x.strokeStyle='#dacd87';x.lineWidth=2;x.setLineDash([18,18]);roads.forEach(a=>{x.beginPath();x.moveTo(a[0]-cam.x,a[1]-cam.y);x.lineTo(a[2]-cam.x,a[3]-cam.y);x.stroke()});x.setLineDash([]);
+ blocks.forEach(b=>{let[sx,sy]=r(b);if(sx+b.w<0||sy+b.h<0||sx>W||sy>H)return;
+ x.fillStyle='rgba(0,0,0,.25)';x.fillRect(sx+7,sy+9,b.w,b.h);
+ let g=x.createLinearGradient(sx,sy,sx+b.w,sy+b.h);g.addColorStop(0,'#69747d');g.addColorStop(1,'#3f474f');x.fillStyle=g;x.fillRect(sx,sy,b.w,b.h);
+ x.fillStyle='#7f8990';x.fillRect(sx+4,sy+4,b.w-8,8);x.strokeStyle='#20272d';x.lineWidth=2;x.strokeRect(sx,sy,b.w,b.h);
+ if(hd){for(let xx=sx+12;xx<sx+b.w-8;xx+=26)for(let yy=sy+20;yy<sy+b.h-8;yy+=24){x.fillStyle='#b8d4e0';x.fillRect(xx,yy,9,7)}}});
+ parks.forEach(a=>{let[sx,sy]=r(a);x.fillStyle='#2f6b43';x.fillRect(sx,sy,a.w,a.h);x.strokeStyle='#79a66d';x.strokeRect(sx,sy,a.w,a.h);
+ for(let i=0;i<12;i++){let tx=sx+(i*47)%a.w+18,ty=sy+(i*73)%a.h+20;x.fillStyle='#1d482d';x.beginPath();x.arc(tx,ty,14,0,7);x.fill();x.fillStyle='#5c8b51';x.beginPath();x.arc(tx-3,ty-4,12,0,7);x.fill()}
+ x.fillStyle='#dcebdc';x.font='bold 11px Arial';x.textAlign='center';x.fillText(a.n,sx+a.w/2,sy+a.h/2)});
+bridges.forEach(b=>{let[sx,sy]=r(b);x.fillStyle='#66737d';x.fillRect(sx,sy,b.w,b.h);x.strokeStyle='#b7c4ca';x.lineWidth=3;x.strokeRect(sx,sy,b.w,b.h);x.fillStyle='#e4edf1';x.font='bold 10px Arial';x.fillText(b.n,sx+b.w/2,sy-8)});
+shopsWorld.forEach(s=>{let[sx,sy]=r(s);
+ if(s.n==='SLUDGE SLAMMERS'){
+   x.fillStyle='#4b2418';x.fillRect(sx-70,sy-30,140,60);x.strokeStyle='#d59a4a';x.lineWidth=3;x.strokeRect(sx-70,sy-30,140,60);
+   x.fillStyle='#ffd08a';x.font='bold 13px Arial';x.fillText('SLUDGE SLAMMERS',sx,sy+4);x.font='10px Arial';x.fillText('PUB • MUSIC • MISSIONS',sx,sy+19);
+ } else if(s.n==='DIVAS FLATS'){
+   x.fillStyle='#515967';x.fillRect(sx-42,sy-55,84,110);x.strokeStyle='#aab3bf';x.lineWidth=2;x.strokeRect(sx-42,sy-55,84,110);
+   x.fillStyle='#d8e7f0';for(let yy=sy-43;yy<sy+42;yy+=20)for(let xx=sx-30;xx<sx+31;xx+=20)x.fillRect(xx,yy,8,9);
+   x.fillStyle='#fff';x.font='bold 10px Arial';x.fillText('DIVAS FLATS',sx,sy-66);
+ } else {
+   x.fillStyle=s.n==='SAFEHOUSE'?'#6b4cc9':'#43d6ff';x.fillRect(sx-18,sy-18,36,36);x.fillStyle='#fff';x.font='bold 8px Arial';x.fillText(s.n,sx,sy-25)
+ }});
+landmarks.forEach(l=>{let[sx,sy]=r(l);x.fillStyle='rgba(0,0,0,.28)';x.fillRect(sx+9,sy+11,l.w,l.h);let lg=x.createLinearGradient(sx,sy,sx+l.w,sy+l.h);lg.addColorStop(0,'#f1ead7');lg.addColorStop(1,l.col);x.fillStyle=lg;x.fillRect(sx,sy,l.w,l.h);x.strokeStyle='#e7e0c8';x.lineWidth=3;x.strokeRect(sx,sy,l.w,l.h);x.fillStyle='#111';x.font='bold 13px Arial';x.textAlign='center';x.fillText(l.n,sx+l.w/2,sy-10);if(l.n==='CAVE HILL'){x.fillStyle='#3e7444';x.beginPath();x.arc(sx+l.w/2,sy+l.h/2,Math.max(l.w,l.h)*.55,Math.PI,0);x.fill()}});
+ roadblocks.forEach(b=>{let[sx,sy]=r(b);
+ x.fillStyle='#c97d2d';x.fillRect(sx-36,sy-7,72,14);
+ x.fillStyle='#f4e2a1';for(let i=-26;i<=26;i+=13)x.fillRect(sx+i,sy-7,7,14);
+ x.fillStyle='#e6edf0';x.font='bold 9px Arial';x.textAlign='center';x.fillText(b.n,sx,sy-15);
+});
+patrols.forEach(q=>{let[sx,sy]=r(q);x.fillStyle=q.faction==='LOCAL PATROL'?'#6c7b3c':'#3d596f';x.fillRect(sx-5,sy-5,10,14);x.fillStyle='#d7b08c';x.beginPath();x.arc(sx,sy-9,5,0,7);x.fill()});
+if(mi<missions.length){let m=missions[mi],[sx,sy]=r(m);x.fillStyle='#ffd44a';x.beginPath();x.arc(sx,sy,25+Math.sin(Date.now()/160)*4,0,7);x.fill();x.fillStyle='#111';x.font='bold 14px Arial';x.fillText('M',sx,sy+5)}
+ peds.forEach(q=>{let[sx,sy]=r(q);x.fillStyle='#e1b58f';x.beginPath();x.arc(sx,sy,5,0,7);x.fill();x.fillStyle='#345f96';x.fillRect(sx-4,sy+4,8,12)});
+ cars.forEach(v=>drawCar(v));cops.forEach(v=>drawCar(v,true));
+ if(!p.inCar){let[sx,sy]=r(p);x.fillStyle=upgrade?'#ffd15d':'#54a6ff';x.beginPath();x.arc(sx,sy,11,0,7);x.fill()}else drawCar(p.car);
+ if(hd){
+ x.strokeStyle='rgba(190,220,240,.16)';x.lineWidth=1;
+ for(let i=0;i<70;i++){let rx=(i*83+Date.now()/18)%W,ry=(i*137+Date.now()/8)%H;x.beginPath();x.moveTo(rx,ry);x.lineTo(rx-3,ry+12);x.stroke()}
+}
+let darkness=Math.max(0,.58-day*.5);x.fillStyle=`rgba(4,8,16,${darkness})`;x.fillRect(0,0,W,H);
+}
+function update(){
+ let t=T(),sp=(p.inCar?7:3.5)*(upgrade?1.25:1);t.x=Math.max(10,Math.min(world.w-10,t.x+joy.x*sp));t.y=Math.max(10,Math.min(world.h-10,t.y+joy.y*sp));
+ cars.forEach(v=>{if(v.hor){v.x+=v.v*2;if(v.x<0||v.x>world.w)v.v*=-1}else{v.y+=v.v*2;if(v.y<0||v.y>world.h)v.v*=-1}});
+ patrols.forEach(q=>{q.x+=q.dx;q.y+=q.dy;if(q.x<100||q.x>world.w-100)q.dx*=-1;if(q.y<100||q.y>world.h-100)q.dy*=-1});
+roadblocks.forEach(b=>{let dx=t.x-b.x,dy=t.y-b.y,d=Math.hypot(dx,dy);if(d<55&&p.inCar){toast('ROADBLOCK — TURN AROUND OR FIND ANOTHER ROUTE')}});
+peds.forEach(q=>{q.x+=q.dx;q.y+=q.dy;if(q.x<0||q.x>world.w)q.dx*=-1;if(q.y<0||q.y>world.h)q.dy*=-1});
+ if(wanted>=2)cops.forEach(q=>{let dx=t.x-q.x,dy=t.y-q.y,d=Math.hypot(dx,dy)||1;q.x+=dx/d*3;q.y+=dy/d*3});
+ if(mi<missions.length&&Math.hypot(t.x-missions[mi].x,t.y-missions[mi].y)<80){let m=missions[mi];cash+=m.reward;mi++;save();document.getElementById('cash').textContent=cash;document.getElementById('mission').textContent=mi<missions.length?'NEXT: Explore the city':'ALL V5 MISSIONS COMPLETE!';toast(m.t+' +£'+m.reward)}
+ cam.x+=(t.x-W/2-cam.x)*.1;cam.y+=(t.y-H/2-cam.y)*.1;cam.x=Math.max(0,Math.min(world.w-W,cam.x));cam.y=Math.max(0,Math.min(world.h-H,cam.y));
+}
+function save(){localStorage.bs5cash=cash;localStorage.bs5up=upgrade}function loop(){update();draw();requestAnimationFrame(loop)}loop();
+const je=document.getElementById('joy'),kn=document.getElementById('knob');function mv(e){let q=e.touches?e.touches[0]:e,r=je.getBoundingClientRect(),dx=q.clientX-r.left-69,dy=q.clientY-r.top-69,d=Math.hypot(dx,dy)||1,m=Math.min(42,d);joy.x=dx/d*m/42;joy.y=dy/d*m/42;kn.style.transform=`translate(${joy.x*42}px,${joy.y*42}px)`}je.addEventListener('touchstart',mv,{passive:false});je.addEventListener('touchmove',e=>{e.preventDefault();mv(e)},{passive:false});je.addEventListener('touchend',()=>{joy.x=joy.y=0;kn.style.transform='none'});
+document.getElementById('action').onclick=()=>{
+ if(p.inCar){p.inCar=false;p.car=null;document.getElementById('action').textContent='ENTER CAR';return}
+ let near=shopsWorld.find(s=>Math.hypot(p.x-s.x,p.y-s.y)<70);
+ if(near){if(near.n==='SAFEHOUSE'){cash+=50;save();document.getElementById('cash').textContent=cash;toast('SAFEHOUSE REST — +£50')}else if(near.n==='CITY SHOP'){document.getElementById('shop').style.display='block'}else toast('GARAGE: Vehicle service available');return}
+ let b=null,d=85;cars.forEach(v=>{let z=Math.hypot(p.x-v.x,p.y-v.y);if(z<d){d=z;b=v}});
+ if(b){p.inCar=true;p.car=b;document.getElementById('action').textContent='EXIT CAR'}else toast('Find a nearby vehicle or location')
+};
+document.getElementById('wanted').onclick=()=>{wanted=Math.min(5,wanted+1);document.getElementById('stars').textContent='★'.repeat(wanted)+'☆'.repeat(5-wanted);if(wanted>=2)toast('POLICE ARE PURSUING YOU')};
+document.getElementById('shops').onclick=()=>document.getElementById('shop').style.display='block';
+document.getElementById('graphics').onclick=()=>{hd=!hd;document.getElementById('graphics').textContent=hd?'HD MODE':'LOW MODE';toast(hd?'ENHANCED GRAPHICS ON':'BATTERY SAVER MODE')};
+document.getElementById('map').onclick=()=>document.getElementById('citymap').style.display='block';
+function closeMap(){document.getElementById('citymap').style.display='none'};
+function closePub(){document.getElementById('pub').style.display='none'};
+function pubMission(){cash+=100;save();document.getElementById('cash').textContent=cash;toast('BARMAN MISSION COMPLETE — £100 EARNED');closePub()};
+function closeFlats(){document.getElementById('flats').style.display='none'};
+function flatsMission(){cash+=75;save();document.getElementById('cash').textContent=cash;toast('DIVAS FLATS EXPLORED — £75 EARNED');closeFlats()};
+function closeShop(){document.getElementById('shop').style.display='none'}function buy(n,c){if(cash>=c){cash-=c;upgrade=1;save();document.getElementById('cash').textContent=cash;document.getElementById('owned').textContent='Purchased: '+n;toast(n+' purchased!')}else toast('Not enough money')}
+function toast(s){let z=document.getElementById('toast');z.textContent=s;z.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>z.style.display='none',2200)}
+document.getElementById('cash').textContent=cash;
+</script></body></html>
