@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Belfast Streets V62</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;background:#071019;font-family:-apple-system,Arial;color:white}canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#start{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:linear-gradient(#10283a,#05090e)}.card{width:90%;max-width:480px;text-align:center;padding:32px;border-radius:25px;background:#102030;border:1px solid #4c89ae}.card h1{font-size:48px;color:#91d4ff;margin:0}.card p{color:#b9c8d3}button{border:0;border-radius:16px;padding:18px;width:100%;font-size:20px;font-weight:bold;background:#318bd0;color:white}
+#hud{display:none;position:fixed;inset:0;z-index:10;pointer-events:none;padding:calc(env(safe-area-inset-top) + 12px) 14px}.box{background:#09121bd9;border:1px solid #ffffff33;border-radius:12px;padding:9px 12px;display:inline-block;font-size:12px}.top{display:flex;justify-content:space-between}.right{text-align:right}
+#action{display:none;position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 180px);transform:translateX(-50%);z-index:30;width:210px;pointer-events:auto;background:#e2a33d;color:#111;font-size:17px}
+#controls{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}.pad{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);width:140px;height:140px;border-radius:50%;border:1px solid #ffffff44;background:#122537bb;pointer-events:auto;display:grid;place-items:center;color:#d9edff;font-weight:bold;text-align:center}.left{left:18px}.rightpad{right:18px}
+#msg{position:fixed;left:50%;top:90px;transform:translateX(-50%);z-index:25;display:none;background:#09121bea;padding:10px 15px;border-radius:12px;border:1px solid #ffffff22;font-size:12px}
+</style></head><body>
+<canvas id="game"></canvas>
+<div id="start"><div class="card"><h1>BELFAST STREETS</h1><p>V62 • ON FOOT + VEHICLES</p><p>Walk around. Approach the car. Get in. Drive. Get back out.</p><button id="play">ENTER THE CITY</button></div></div>
+<div id="hud"><div class="top"><div class="box"><b id="mode">ON FOOT</b><br><span id="area">BELFAST • CITY CENTRE</span></div><div class="box right"><span id="speed">0 KM/H</span><br>£250</div></div></div>
+<button id="action">🚗 GET IN VEHICLE</button>
+<div id="msg"></div>
+<div id="controls"><div id="left" class="pad left">MOVE<br>◀ ▶</div><div id="right" class="pad rightpad">HOLD<br>DRIVE</div></div>
+<script>
+(()=>{
+const c=document.getElementById('game'),g=c.getContext('2d');let W,H,D,running=false,last=0;
+let player={x:0,y:0},car={x:0,y:0,speed:0},inCar=false,move=0,gas=false;
+function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;g.setTransform(D,0,0,D,0,0);player.x=W*.38;player.y=H*.72;car.x=W*.62;car.y=H*.62}addEventListener('resize',resize);resize();
+const action=document.getElementById('action');
+function start(e){e&&e.preventDefault();running=true;startScreen.style.display='none';hud.style.display='block';controls.style.display='block';show('Walk over to the parked car');requestAnimationFrame(loop)}
+const startScreen=document.getElementById('start'),hud=document.getElementById('hud'),controls=document.getElementById('controls');
+play.addEventListener('click',start);play.addEventListener('touchend',start,{passive:false});
+function show(t){msg.textContent=t;msg.style.display='block';clearTimeout(show.t);show.t=setTimeout(()=>msg.style.display='none',1800)}
+function nearCar(){return Math.hypot(player.x-car.x,player.y-car.y)<95}
+function updateAction(){if(!running)return;if(inCar){action.style.display='block';action.textContent='🚪 EXIT VEHICLE'}else if(nearCar()){action.style.display='block';action.textContent='🚗 GET IN VEHICLE'}else action.style.display='none'}
+action.addEventListener('click',toggleCar);action.addEventListener('touchend',e=>{e.preventDefault();toggleCar()},{passive:false});
+function toggleCar(){if(inCar){inCar=false;player.x=car.x-55;player.y=car.y+25;document.getElementById('mode').textContent='ON FOOT';show('You got out of the vehicle')}else if(nearCar()){inCar=true;document.getElementById('mode').textContent='DRIVING';show('Vehicle entered — hold DRIVE')}} 
+function steer(e){let p=e.touches?e.touches[0]:e,r=left.getBoundingClientRect();move=Math.max(-1,Math.min(1,(p.clientX-(r.left+r.width/2))/(r.width/2)))}
+left.addEventListener('touchstart',e=>{e.preventDefault();steer(e)},{passive:false});left.addEventListener('touchmove',e=>{e.preventDefault();steer(e)},{passive:false});left.addEventListener('touchend',()=>move=0);
+right.addEventListener('touchstart',e=>{e.preventDefault();gas=true},{passive:false});right.addEventListener('touchend',()=>gas=false);right.addEventListener('touchcancel',()=>gas=false);
+function drawPerson(){g.fillStyle='#111';g.beginPath();g.arc(player.x,player.y-20,10,0,7);g.fill();g.fillStyle='#3d8dcc';g.fillRect(player.x-11,player.y-10,22,30);g.strokeStyle='#111';g.lineWidth=5;g.beginPath();g.moveTo(player.x-6,player.y+18);g.lineTo(player.x-10,player.y+35);g.moveTo(player.x+6,player.y+18);g.lineTo(player.x+10,player.y+35);g.stroke()}
+function drawCar(){g.save();g.translate(car.x,car.y);g.fillStyle='#0008';g.fillRect(-42,-20,84,55);g.fillStyle='#d94443';g.beginPath();g.roundRect(-40,-28,80,56,12);g.fill();g.fillStyle='#9ed5ed';g.fillRect(-24,-22,48,20);g.fillStyle='#151515';g.fillRect(-45,-18,9,18);g.fillRect(36,-18,9,18);g.fillRect(-45,5,9,18);g.fillRect(36,5,9,18);g.restore()}
+function draw(){g.fillStyle='#234d3d';g.fillRect(0,0,W,H);g.fillStyle='#2d353b';g.fillRect(W*.25,0,W*.5,H);g.fillStyle='#d8c774';for(let y=20;y<H;y+=55)g.fillRect(W*.495,y,10,28);
+g.fillStyle='#596b73';for(let i=0;i<6;i++){g.fillRect(20+i*145,70+(i%2)*35,95,80);g.fillRect(30+i*145,H-160-(i%3)*20,100,80)}
+g.fillStyle='#e7d4ad';g.font='bold 12px Arial';g.fillText('BELFAST CITY CENTRE',20,35);
+drawCar();if(!inCar)drawPerson();
+}
+function update(dt){if(inCar){car.speed+=(gas?180:0-car.speed)*Math.min(1,dt*2);car.speed=Math.max(0,Math.min(180,car.speed));car.x+=move*120*dt;car.y-=car.speed*dt*.55;car.x=Math.max(W*.28,Math.min(W*.72,car.x));if(car.y<80){car.y=H*.7;show('New street reached')}speed.textContent=Math.round(car.speed*.7)+' KM/H'}else{player.x+=move*150*dt;if(gas)player.y-=140*dt;player.x=Math.max(20,Math.min(W-20,player.x));player.y=Math.max(50,Math.min(H-30,player.y));speed.textContent='0 KM/H'}updateAction()}
+function loop(t){let dt=Math.min(.05,(t-last||16)/1000);last=t;if(running){update(dt);draw();requestAnimationFrame(loop)}}
+})();
+</script></body></html>
