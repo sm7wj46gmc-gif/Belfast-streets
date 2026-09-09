@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Lucy & Leo: Prince Fireball — Orientation Fix v16</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050814;font-family:Arial,sans-serif;touch-action:none}canvas{display:block;width:100%;height:100%;position:fixed;inset:0}
+#ui{position:fixed;inset:0;pointer-events:none;color:white}#hud{position:absolute;top:12px;left:14px;text-shadow:0 2px 8px #000;font-weight:bold;font-size:14px}#sound{position:absolute;top:12px;right:14px;pointer-events:auto;border:1px solid #4bdcff;border-radius:14px;background:#071629cc;color:white;font-size:22px;padding:10px}
+#controls{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:space-between;padding:0 max(12px,env(safe-area-inset-left));pointer-events:none}.cluster{display:flex;gap:8px;pointer-events:auto}button.ctrl{width:68px;height:60px;border-radius:22px;border:2px solid #4bcfff;background:#10234ddd;color:#fff;font-weight:bold;font-size:14px;box-shadow:0 0 18px #1674a8aa}
+@media(max-width:600px){button.ctrl{width:58px;height:52px;font-size:11px}#controls{padding:0 8px;bottom:max(8px,env(safe-area-inset-bottom))}.cluster{gap:5px}#hud{font-size:11px;top:7px;left:8px}#sound{top:7px;right:8px;padding:7px;font-size:17px}} #msg{position:absolute;top:18%;width:100%;text-align:center;font-size:clamp(24px,5vw,54px);font-weight:900;text-shadow:0 0 20px #5df;pointer-events:none}
+#menu{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle,#172a57aa,#02040ddd 65%);pointer-events:auto}
+h1{font-size:clamp(34px,7vw,74px);margin:0;color:#79eaff;text-shadow:0 0 30px #00aaff}#menu p{max-width:700px;font-size:18px;line-height:1.5;color:#d5eaff;padding:0 20px}.play{font-size:24px;padding:16px 34px;border-radius:30px;border:2px solid #77ffb0;background:#123b2d;color:#fff;font-weight:bold;box-shadow:0 0 28px #40ff99}
+.small{font-size:13px;color:#8ca4c8;margin-top:18px}
+</style>
+</head><body>
+<canvas id="game"></canvas><div id="ui">
+<div id="hud"></div><button id="sound">🔊</button><div id="msg"></div>
+<div id="controls"><div class="cluster"><button class="ctrl" id="left">◀</button><button class="ctrl" id="right">▶</button></div><div class="cluster"><button class="ctrl" id="dash">DASH</button><button class="ctrl" id="jump">JUMP</button><button class="ctrl" id="attack">🐾</button></div></div>
+<div id="rotateHint" style="display:none;position:absolute;inset:0;z-index:20;align-items:center;justify-content:center;text-align:center;background:#050814ee;color:#79eaff;font-size:24px;font-weight:bold;padding:30px">🔄 Rotate your iPhone sideways for the best experience</div><div id="menu"><h1>LUCY & LEO</h1><h2>PRINCE FIREBALL — ORIENTATION FIX v16</h2><p>A dark futuristic platform adventure. Guide Lucy the black Labrador and her ginger Cocker Spaniel friend Leo through Robo Rats, Forky, Sludge Brains and Fanta Bombs to defeat Prince Fireball.</p><button class="play" id="play">START ADVENTURE</button><div class="small">Built for iPad landscape • Touch controls • Sound • Checkpoints</div></div>
+</div>
+<script>
+const c=document.getElementById('game'),ctx=c.getContext('2d'),hud=document.getElementById('hud'),msg=document.getElementById('msg'),menu=document.getElementById('menu');
+let W,H,dpr,lastGameHeight=0;
+function resize(){
+ const oldH=H||0;
+ W=Math.max(320,window.innerWidth);
+ H=Math.max(320,window.innerHeight);
+ dpr=Math.min(window.devicePixelRatio||1,1.5);
+ c.width=Math.floor(W*dpr);c.height=Math.floor(H*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+
+ // The game floor depends on screen height. If the phone rotates, rebuild
+ // the current level so Lucy, Leo and platforms are never left off-screen.
+ if(oldH && Math.abs(H-oldH)>80 && typeof level!=='undefined' &&
+    typeof state!=='undefined' && state==='playing' && typeof makeLevel==='function'){
+   setTimeout(()=>makeLevel(level),80);
+ }
+ lastGameHeight=H;
+}
+addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,350));
+resize();
+const rotateHint=document.getElementById('rotateHint');
+function checkOrientation(){
+ const portrait=window.innerHeight>window.innerWidth;
+ rotateHint.style.display=(portrait && state!=='playing')?'flex':'none';
+}
+addEventListener('resize',checkOrientation);
+addEventListener('orientationchange',()=>setTimeout(checkOrientation,350));
+checkOrientation();
+let input={left:0,right:0,jump:0,attack:0,dash:0},state='menu',level=0,score=0,cam=0,last=0,world,banner=0,soundOn=true,ac;
+function audio(){if(!ac){ac=new (AudioContext||webkitAudioContext)()}if(ac.state==='suspended')ac.resume()}
+function beep(f=.2,d=.1,t='sine',v=.05,end=0){if(!soundOn)return;audio();let o=ac.createOscillator(),g=ac.createGain(),n=ac.currentTime;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);if(end)o.frequency.exponentialRampToValueAtTime(end,n+d);o.connect(g).connect(ac.destination);o.start(n);o.stop(n+d)}
+function sfx(n){if(n==='jump')beep(440,.1,'square',.04,720);if(n==='bark'){beep(150,.1,'sawtooth',.06,300);beep(700,.07,'square',.03,450)}if(n==='boom'){beep(90,.28,'sawtooth',.09,30)}if(n==='hit')beep(110,.18,'sawtooth',.07,40);if(n==='win'){beep(523,.12,'sine',.06);setTimeout(()=>beep(659,.12,'sine',.06),110);setTimeout(()=>beep(784,.3,'sine',.07),220)}}
+document.getElementById('sound').onclick=()=>{soundOn=!soundOn;document.getElementById('sound').textContent=soundOn?'🔊':'🔇';if(soundOn)audio()};
+function holdControl(id,key){
+ const e=document.getElementById(id);
+ const down=ev=>{ev.preventDefault();input[key]=1;audio()};
+ const up=ev=>{if(ev)ev.preventDefault();input[key]=0};
+ e.addEventListener('pointerdown',down,{passive:false});
+ e.addEventListener('pointerup',up,{passive:false});
+ e.addEventListener('pointercancel',up,{passive:false});
+ e.addEventListener('touchstart',down,{passive:false});
+ e.addEventListener('touchend',up,{passive:false});
+ e.addEventListener('touchcancel',up,{passive:false});
+}
+holdControl('left','left');holdControl('right','right');
+for(const id of ['jump','attack','dash']){
+ const e=document.getElementById(id);
+ const press=ev=>{ev.preventDefault();input[id]=1;audio()};
+ e.addEventListener('pointerdown',press,{passive:false});
+ e.addEventListener('touchstart',press,{passive:false});
+}
+document.addEventListener('pointerup',()=>{input.left=0;input.right=0});
+document.addEventListener('touchend',()=>{input.left=0;input.right=0},{passive:true});
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='a')input.left=1;if(e.key==='ArrowRight'||e.key==='d')input.right=1;if(e.key===' '||e.key==='ArrowUp')input.jump=1;if(e.key==='x')input.attack=1;if(e.key==='Shift')input.dash=1});addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a')input.left=0;if(e.key==='ArrowRight'||e.key==='d')input.right=0});
+const levels=[{name:'Neon Kennels',len:3400,boss:false},{name:'Robo Factory',len:4100,boss:false},{name:'Sludge Sector',len:4600,boss:false},{name:'Fireball Citadel',len:5200,boss:true}];
+function makeLevel(n){
+ let gy=H-95,L=levels[n].len;world={gy,L,plats:[],enemies:[],bombs:[],bones:[],shots:[],parts:[],nuggets:[],nuggetTimer:5,checkpoint:90,boss:null};
+ for(let x=0;x<L;x+=420){
+ let gap=(x>1000&&x%1680===420)?70:0;
+ world.plats.push({x,y:gy,w:420-gap,h:40});
+}
+ let heights=[80,125,95,150,110];for(let x=320;x<L-250;x+=340){world.plats.push({x,y:gy-heights[(x/340|0)%heights.length],w:170,h:22})}
+ let types=['rat','brain','forky','rat','brain'];for(let x=550;x<L-(n===3?750:100);x+=430){world.enemies.push({x,y:gy-55,w:55,h:55,type:types[(x/430|0+n)%types.length],dir:1,hp:types[(x/430|0+n)%types.length]==='forky'?3:2,vx:55+Math.random()*35})}
+ for(let x=760;x<L-500;x+=820)world.bombs.push({x,y:gy-43,w:42,h:42})
+ for(let x=240;x<L-120;x+=260)world.bones.push({x,y:gy-160-(x%3)*35,t:0})
+ if(n===3)world.boss={x:L-420,y:gy-130,w:110,h:130,hp:18,max:18,active:false,cool:1.5};
+ window.hero={x:90,y:gy-60,w:76,h:60,vx:0,vy:0,face:1,hp:5,max:5,ground:false,jumps:0,cool:0,dash:0,dashCd:0,inv:0};
+ window.leo={x:25,y:gy-50,w:62,h:48,vx:0,vy:0,ground:false,cool:0};
+ show('LEVEL '+(n+1)+' — '+levels[n].name);banner=2.2;
+}
+function show(t){msg.textContent=t;msg.style.opacity=1}
+function overlap(a,b){return a.x<a.x+a.w&&a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function move(o,dt){
+ // One-way platform physics: platforms only catch characters from above.
+ // This prevents Lucy getting stuck against invisible platform edges.
+ o.ground=false;
+ const oldBottom=o.y+o.h;
+ o.vy+=1650*dt;
+
+ // Horizontal movement is deliberately independent of platforms.
+ o.x+=o.vx*dt;
+ o.x=Math.max(0,Math.min(world.L-o.w,o.x));
+
+ // Vertical movement.
+ o.y+=o.vy*dt;
+ if(o.vy>=0){
+   let landing=null;
+   for(const p of world.plats){
+     const newBottom=o.y+o.h;
+     const crossedTop=oldBottom<=p.y+8 && newBottom>=p.y;
+     const withinX=o.x+o.w>p.x+6 && o.x<p.x+p.w-6;
+     if(crossedTop&&withinX){
+       if(!landing||p.y<landing.y)landing=p;
+     }
+   }
+   if(landing){
+     o.y=landing.y-o.h;
+     o.vy=0;
+     o.ground=true;
+   }
+ }
+ // Safety reset if a character falls too far.
+ if(o.y>world.gy+260){
+   o.x=o===hero?world.checkpoint:Math.max(0,hero.x-100);
+   o.y=world.gy-o.h;
+   o.vy=0;
+ }
+}
+function hurt(){if(hero.inv>0||hero.dash>0)return;hero.hp--;hero.inv=1;sfx('hit');burst(hero.x+35,hero.y+25,'#ff4d5e',18);if(hero.hp<=0){hero.hp=hero.max;hero.x=world.checkpoint;hero.y=world.gy-70;show('BACK TO CHECKPOINT!');banner=1.4}}
+function burst(x,y,col,n){for(let i=0;i<n;i++)world.parts.push({x,y,vx:(Math.random()-.5)*300,vy:(Math.random()-.7)*300,life:.5+Math.random()*.5,col})}
+function update(dt){
+ if(banner>0){banner-=dt;if(banner<=0)msg.style.opacity=0}
+ hero.cool-=dt;hero.inv-=dt;hero.dashCd-=dt;if(input.left)hero.face=-1;if(input.right)hero.face=1;
+ if(input.dash&&hero.dashCd<=0){hero.dash=.22;hero.dashCd=.8;sfx('jump')}input.dash=0;
+ hero.vx=hero.dash>0?(hero.dash-=dt,hero.face*650):(input.left?-300:0)+(input.right?300:0);
+ // Mobile input safety: never allow opposing buttons to cancel movement accidentally.
+ if(input.left&&input.right)hero.vx=hero.face*300;
+ if(input.jump&&(hero.ground||hero.jumps<2)){hero.vy=-650;hero.jumps=hero.ground?1:hero.jumps+1;hero.ground=false;sfx('jump')}input.jump=0;
+ let wasGround=hero.ground;move(hero,dt);if(hero.ground)hero.jumps=0;
+ if(input.attack&&hero.cool<=0){hero.cool=.32;world.shots.push({x:hero.x+hero.w/2,y:hero.y+28,vx:hero.face*620,life:1.3,w:25,h:12});sfx('bark')}input.attack=0;
+ leo.cool-=dt;leo.vx=Math.max(-180,Math.min(180,(hero.x-75*hero.face-leo.x)*4));move(leo,dt);
+ for(const e of world.enemies){e.vy=(e.vy||0)+1650*dt;e.x+=e.dir*e.vx*dt;e.y+=e.vy*dt;for(const p of world.plats)if(e.x+e.w>p.x&&e.x<p.x+p.w&&e.y+e.h>p.y&&e.y<p.y+p.h&&e.vy>=0){e.y=p.y-e.h;e.vy=0}if(e.x<0||e.x>world.L-e.w)e.dir*=-1;if(overlap(hero,e))hurt();if(Math.abs(leo.x-e.x)<50&&Math.abs(leo.y-e.y)<50&&leo.cool<=0){e.hp-=2;leo.cool=.8;burst(e.x,e.y,'#ffb16a',12)}}
+ world.enemies=world.enemies.filter(e=>e.hp>0);
+ for(const b of world.bombs)if(!b.dead&&overlap(hero,b)){b.dead=1;sfx('boom');burst(b.x+20,b.y+20,'#ff841c',30);hurt()}
+ for(const b of world.bones)if(!b.t&&Math.abs(hero.x-b.x)<60&&Math.abs(hero.y-b.y)<80){b.t=1;score+=25;beep(900,.08,'sine',.04,1200)}
+ for(const s of world.shots){s.x+=s.vx*dt;s.life-=dt;for(const e of world.enemies)if(e.hp>0&&overlap(s,e)){e.hp--;s.life=0;burst(e.x,e.y,'#7dff69',14)}for(const b of world.bombs)if(!b.dead&&overlap(s,b)){b.dead=1;s.life=0;score+=50;sfx('boom');burst(b.x,b.y,'#ff841c',28)}}
+ if(world.boss&&hero.x>world.L-900)world.boss.active=true;
+ if(world.boss&&world.boss.active){
+  let b=world.boss;b.cool-=dt;b.x+=Math.sign(hero.x-b.x)*35*dt;
+  if(overlap(hero,b)){if(hero.vy>180&&hero.y+hero.h<b.y+45){b.hp-=2;hero.vy=-500;burst(b.x+50,b.y+30,'#fff36d',20)}else hurt()}
+  for(const s of world.shots)if(s.life>0&&overlap(s,b)){b.hp--;s.life=0;sfx('hit');burst(b.x+55,b.y+50,'#70ff6e',20)}
+  if(b.cool<=0){b.cool=b.hp<9?.65:1.15;world.shots.push({x:b.x,y:b.y+55,vx:-420,life:2,w:28,h:18,enemy:1})}
+  if(b.hp<=0){score+=2000;sfx('win');show('PRINCE FIREBALL DEFEATED!');banner=3;state='victory'}
+ }
+ for(const s of world.shots)if(s.enemy&&overlap(hero,s)){s.life=0;hurt()}
+ world.shots=world.shots.filter(s=>s.life>0);world.bombs=world.bombs.filter(b=>!b.dead);world.bones=world.bones.filter(b=>!b.t);
+ // Simple stable falling Golden Nugget hazard.
+ world.nuggetTimer-=dt;
+ if(world.nuggetTimer<=0){
+   world.nuggetTimer=3.5+Math.random()*3.5;
+   let nx=hero.x+(Math.random()<.5?-1:1)*(180+Math.random()*320);
+   nx=Math.max(80,Math.min(world.L-80,nx));
+   world.nuggets.push({x:nx,y:-30,w:24,h:18,vy:0,life:5});
+ }
+ for(const n of world.nuggets){
+   n.vy+=850*dt;n.y+=n.vy*dt;n.life-=dt;
+   if(overlap(hero,n)){n.life=0;hurt();sfx('hit');burst(n.x+12,n.y+9,'#ffd23f',12)}
+ }
+ world.nuggets=world.nuggets.filter(n=>n.life>0&&n.y<world.gy+80);
+ for(const p of world.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=600*dt;p.life-=dt}world.parts=world.parts.filter(p=>p.life>0);
+ let cp=Math.floor(hero.x/950)*950+90;if(cp>world.checkpoint&&cp<world.L-200){world.checkpoint=cp;show('CHECKPOINT!');banner=1.1;beep(760,.1,'sine',.04)}
+ if(hero.x>world.L-120&&!levels[level].boss){level++;if(level<levels.length)makeLevel(level);else state='victory'}
+ cam=Math.max(0,Math.min(hero.x-W*.38,world.L-W));hud.innerHTML=`<b>🖤 LUCY & 🐶 LEO</b><br>❤️ ${'♥'.repeat(hero.hp)}${'♡'.repeat(hero.max-hero.hp)} &nbsp; ✦ ${score}<br><span style="color:${hero.dashCd<=0?'#68dfff':'#6a7890'}">DASH ${hero.dashCd<=0?'READY':'...'}</span>`;
+}
+function rect(x,y,w,h,col){ctx.fillStyle=col;ctx.fillRect(x,y,w,h)}
+function drawDog(o,isLeo=false){let x=o.x-cam,y=o.y;ctx.save();ctx.translate(x,y);if(isLeo){ctx.fillStyle='#b96f31';ctx.beginPath();ctx.ellipse(35,33,28,17,0,0,7);ctx.fill();ctx.beginPath();ctx.arc(18,20,19,0,7);ctx.fill();ctx.fillStyle='#8c4d24';ctx.beginPath();ctx.ellipse(6,29,8,20,.2,0,7);ctx.fill();ctx.fillStyle='#52bfff';ctx.fillRect(17,31,18,4)}else{if(hero.inv>0&&Math.floor(hero.inv*10)%2===0)ctx.globalAlpha=.4;ctx.fillStyle='#0a0c12';ctx.beginPath();ctx.ellipse(39,36,34,20,0,0,7);ctx.fill();ctx.beginPath();ctx.arc(20,24,22,0,7);ctx.fill();ctx.fillStyle='#17202a';ctx.beginPath();ctx.ellipse(10,18,10,17,.4,0,7);ctx.fill();ctx.fillStyle='#36e6ff';ctx.fillRect(18,42,17,4);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(14,20,3,0,7);ctx.fill();if(hero.dash>0){ctx.globalAlpha=.25;rect(-55,22,55,25,'#49dfff')}}ctx.restore()}
+function drawEnemy(e){let x=e.x-cam,y=e.y;if(e.type==='rat'){ctx.fillStyle='#697687';ctx.beginPath();ctx.ellipse(x+28,y+35,29,17,0,0,7);ctx.fill();ctx.fillStyle='#ff4055';rect(x+15,y+25,7,5);rect(x+30,y+25,7,5)}else if(e.type==='forky'){rect(x+12,y+22,30,33,'#a66bff');for(let i=0;i<4;i++)rect(x+7+i*10,y,5,24,'#e4dcff')}else{ctx.fillStyle='#62db6a';ctx.beginPath();ctx.arc(x+28,y+28,27,0,7);ctx.fill();ctx.fillStyle='#1f6b2d';for(let i=0;i<4;i++)rect(x+8+i*11,y+15+(i%2)*8,8,5)}}
+function drawBoss(b){let x=b.x-cam,y=b.y;ctx.save();ctx.shadowBlur=25;ctx.shadowColor='#72ff46';ctx.fillStyle=b.hp<9?'#ff573c':'#46d94d';ctx.beginPath();ctx.ellipse(x+55,y+78,52,60,0,0,7);ctx.fill();ctx.fillStyle='#1b1321';ctx.beginPath();ctx.arc(x+55,y+35,38,0,7);ctx.fill();ctx.fillStyle='#77ff5b';ctx.beginPath();ctx.arc(x+40,y+31,7,0,7);ctx.fill();ctx.beginPath();ctx.arc(x+70,y+31,7,0,7);ctx.fill();ctx.shadowBlur=0;ctx.restore()}
+function draw(){
+ ctx.clearRect(0,0,W,H);let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#060b25');g.addColorStop(1,'#11102a');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<90;i++){let x=(i*193-cam*.08)%(W+100);let y=25+(i*71%(H*.62));rect(x,y,2,2,'#6f9cc6')}
+ for(let i=0;i<20;i++){let x=((i*311-cam*.2)%(W+150));rect(x,H*.55-(i%5)*30,70,220,'#111c38')}
+ ctx.save();ctx.translate(-cam,0);
+ for(const p of world.plats){ctx.fillStyle='#1a3152';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#36c9ff';ctx.fillRect(p.x,p.y,p.w,3)}
+ for(const b of world.bones){let x=b.x,y=b.y+Math.sin(performance.now()/250+b.x)*5;ctx.strokeStyle='#ffe99a';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(x-10,y);ctx.lineTo(x+10,y);ctx.stroke();ctx.beginPath();ctx.arc(x-12,y,5,0,7);ctx.arc(x+12,y,5,0,7);ctx.stroke()}
+ for(const b of world.bombs){ctx.shadowBlur=18;ctx.shadowColor='#ff7b18';ctx.fillStyle='#ff7b18';ctx.beginPath();ctx.arc(b.x+21,b.y+22,19,0,7);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font='bold 8px Arial';ctx.fillText('F',b.x+18,b.y+26)}
+ for(const n of world.nuggets){
+   ctx.fillStyle='#e7ad20';ctx.shadowBlur=12;ctx.shadowColor='#ffd23f';
+   ctx.fillRect(n.x,n.y,n.w,n.h);
+   ctx.fillStyle='#fff09b';ctx.fillRect(n.x+4,n.y+3,n.w-8,3);ctx.shadowBlur=0;
+ }
+ for(const e of world.enemies)drawEnemy(e);if(world.boss)drawBoss(world.boss);
+ for(const s of world.shots){ctx.fillStyle=s.enemy?'#76ff45':'#50dfff';ctx.shadowBlur=14;ctx.shadowColor=ctx.fillStyle;ctx.fillRect(s.x,s.y,s.w,s.h);ctx.shadowBlur=0}
+ drawDog(hero);drawDog(leo,true);
+ for(const p of world.parts){ctx.globalAlpha=Math.max(0,p.life);rect(p.x,p.y,4,4,p.col)}ctx.globalAlpha=1;ctx.restore();
+ if(world.boss&&world.boss.active){let b=world.boss;ctx.fillStyle='#280b16cc';ctx.fillRect(W*.3,18,W*.4,18);ctx.fillStyle='#e84b47';ctx.fillRect(W*.3,18,W*.4*(b.hp/b.max),18);ctx.strokeStyle='#fff';ctx.strokeRect(W*.3,18,W*.4,18);ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.textAlign='center';ctx.fillText('PRINCE FIREBALL',W/2,32);ctx.textAlign='left'}
+}
+function loop(t){let dt=Math.min(.033,(t-last)/1000||0);last=t;if(state==='play')update(dt);if(state==='play'||state==='victory')draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+document.getElementById('play').onclick=()=>{audio();menu.style.display='none';score=0;level=0;makeLevel(0);state='play'};
+</script></body></html>
